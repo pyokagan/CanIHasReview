@@ -1,0 +1,10 @@
+<h1><%= prInfo.title %></h1>
+<ul>
+<% prCommits.forEach(function(commit) { %>
+    <li><%= commit.subject %></li>
+<% }); %>
+</ul>
+
+<form action="" method="post">
+    <input type="submit" value="Submit new iteration">
+</form>
