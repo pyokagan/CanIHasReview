@@ -1,0 +1,4 @@
+language: node_js
+node_js:
+  - "6"  # Latest nodejs major release
+  - "4.6"  # What Debian sid currently uses
