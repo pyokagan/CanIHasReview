@@ -2,7 +2,11 @@
 
 module.exports = {
   repos: {
-    'pyokagan/canihasreview': {},
-    'se-edu': {},
+    'pyokagan/canihasreview': {
+      readyForReviewLabels: ['ReadyForReview'],
+    },
+    'se-edu': {
+      readyForReviewLabels: ['s.ToReview'],
+    },
   },
 };
