@@ -112,6 +112,10 @@ module.exports = function(baseRoute) {
 
 
   function *runPostRoute(prInfo) {
+    const repoConfig = configLib.getRepoConfig(config, prInfo.base.owner, prInfo.base.repo);
+    if (!repoConfig)
+      throw new Error('Unsupported base repo');
+
     const tmpDir = yield tmp.dir({ unsafeCleanup: true });
 
     const myShell = shell.defaults({
@@ -142,6 +146,11 @@ module.exports = function(baseRoute) {
     const ghBotApi = gh.makeGhApi(BOT_TOKEN);
     const commentBody = formatComment(prInfo, prCommits, nextVersion, shas.interdiff);
     yield gh.postComment(ghBotApi, prInfo, commentBody);
+
+    // Set labels (if needed)
+    if (repoConfig.readyForReviewLabels)
+      yield gh.setIssueLabels(ghBotApi, prInfo.base.owner, prInfo.base.repo,
+                              prInfo.number, repoConfig.readyForReviewLabels);
   }
 
   return compose([getRoute, postRoute]);
