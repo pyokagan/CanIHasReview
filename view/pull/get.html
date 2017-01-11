@@ -1,10 +1,18 @@
-<h1><%= prInfo.title %></h1>
-<ul>
-<% prCommits.forEach(function(commit) { %>
-    <li><%= commit.subject %></li>
-<% }); %>
-</ul>
+<%- include('header') %>
 
-<form action="" method="post">
-    <input type="submit" value="Submit new iteration">
-</form>
+<section class="container">
+  <h2>Submit a new iteration</h2>
+  <ul>
+<% for (var i = 0; i < prCommits.length; i++) {
+     var nr = (i + 1) + '/' + prCommits.length;
+     var subject = prCommits[i].subject;
+     var url = 'https://github.com/' + prInfo.base.owner + '/' + prInfo.base.repo + '/pull/' + prInfo.number + '/commits/' + prCommits[i].sha;
+%>
+  <li>[<%= nr %>] <a href="<%= url %>"><%= subject %></a></li>
+<% } %>
+  </ul>
+
+  <form action="" method="post">
+    <input class="pure-button pure-button-primary" type="submit" value="Submit new iteration">
+  </form>
+</section>
