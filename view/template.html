@@ -5,6 +5,14 @@
     <title><%= (typeof title === 'string') ? title : 'Can I Has Review?' %></title>
     <link rel="stylesheet" href="/purecss/pure.css">
 <style type="text/css">
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 #menu {
   background: #191818;
 }
@@ -18,6 +26,10 @@
   color: white;
   padding: 2em 1em;
   text-shadow: 1px 1px black;
+}
+
+.header a {
+  color: white;
 }
 
 .container {
