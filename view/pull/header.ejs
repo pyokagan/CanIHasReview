@@ -8,5 +8,7 @@ var mainUrl = '/' + prInfo.base.owner + '/' + prInfo.base.repo + '/pull/' + prIn
       color: rgb(210, 210, 210);
     }
   </style>
-  <h1 class="container"><a href="<%= mainUrl %>"><%= prInfo.title %> <span class="number-header">#<%= prInfo.number %></span></a></h1>
+  <div class="container">
+    <h1><a href="<%= mainUrl %>"><%= prInfo.title %> <span class="number-header">#<%= prInfo.number %></span></a></h1>
+  </div>
 </header>
