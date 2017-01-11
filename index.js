@@ -27,7 +27,7 @@ app.keys = process.env.KOA_KEYS.split(/\s+/);
 app.proxy = !!process.env.KOA_PROXY;
 
 app.use(require('koa-logger')());
-app.use(require('./controller/fatal-error')());
+app.use(require('./controller/error')());
 if (process.env.KOA_REQUIRE_HTTPS) {
   app.use(require('koa-sslify')({
     trustProtoHeader: !!process.env.KOA_PROXY,
