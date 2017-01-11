@@ -26,7 +26,7 @@ module.exports = (function() {
       yield next;
     } catch (e) {
       console.error(e.stack);
-      this.status = 500;
+      this.status = e.status || 500;
       this.body = formatErrorPage(e);
     }
   };
