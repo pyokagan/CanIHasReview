@@ -24,6 +24,8 @@ module.exports = (function() {
   return function* (next) {
     try {
       yield next;
+      if (this.response.status === 404 && !this.response.body)
+        this.throw(404);
     } catch (e) {
       console.error(e.stack);
       this.status = e.status || 500;
