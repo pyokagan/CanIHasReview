@@ -33,6 +33,7 @@ if (process.env.KOA_REQUIRE_HTTPS) {
     trustProtoHeader: !!process.env.KOA_PROXY,
   }));
 }
+app.use(require('./controller/purecss')('/purecss'));
 app.use(require('koa-session')(app));
 require('koa-ejs')(app, {
   root: path.join(__dirname, 'view'),
