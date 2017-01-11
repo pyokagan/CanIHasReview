@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Very fatal error handler.
+ * Error handler
  */
 
 
