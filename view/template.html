@@ -1,10 +1,40 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title><%= (typeof title === 'string') ? title : 'Can I Has Review?' %></title>
-        <link rel="stylesheet" href="/purecss/pure-min.css">
-    </head>
-    <body>
-        <%- body %>
-    </body>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= (typeof title === 'string') ? title : 'Can I Has Review?' %></title>
+    <link rel="stylesheet" href="/purecss/pure.css">
+<style type="text/css">
+#menu {
+  background: #191818;
+}
+
+#menu .pure-menu-heading {
+  color: white;
+}
+
+.header {
+  background: rgb(39, 74, 119);
+  color: white;
+  padding: 2em 1em;
+  text-shadow: 1px 1px black;
+}
+
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1em;
+  padding-right: 1em;
+  max-width: 960px;
+}
+</style>
+  </head>
+  <body>
+    <header id="menu" class="pure-menu pure-menu-horizontal">
+      <a class="pure-menu-heading" href="/">Can I Has Review?</a>
+    </header>
+    <main>
+      <%- body %>
+    </main>
+  </body>
 </html>
