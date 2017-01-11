@@ -1,0 +1,14 @@
+<%
+var mainUrl = '/' + prInfo.base.owner + '/' + prInfo.base.repo + '/pull/' + prInfo.number;
+%>
+<header class="header">
+  <style scoped>
+    .number-header {
+      font-weight: normal;
+      color: rgb(210, 210, 210);
+    }
+  </style>
+  <div class="container">
+    <h1><a href="<%= mainUrl %>"><%= prInfo.title %> <span class="number-header">#<%= prInfo.number %></span></a></h1>
+  </div>
+</header>
