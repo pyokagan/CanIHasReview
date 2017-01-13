@@ -1,4 +1,6 @@
 'use strict';
+const path = require('path');
+const koa = require('koa');
 
 function hasLocalConfig() {
   try {
@@ -12,11 +14,6 @@ if (hasLocalConfig())
   Object.assign(process.env, require('./localConfig'));
 
 
-const path = require('path');
-const co = require('co');
-const koa = require('koa');
-const route = require('koa-route');
-const gh = require('./lib/github');
 
 const app = koa();
 
