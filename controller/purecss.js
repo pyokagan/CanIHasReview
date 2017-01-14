@@ -4,7 +4,7 @@ const fs = require('fs');
 const purecss = require('purecss');
 
 
-module.exports = function(baseRoute) {
+module.exports = function(env, baseRoute) {
   if (!baseRoute)
     baseRoute = '';
 

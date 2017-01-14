@@ -5,28 +5,29 @@ const qs = require('querystring');
 const url = require('url');
 const route = require('koa-route');
 const compose = require('koa-compose');
+const simple_oauth2 = require('simple-oauth2');
 const github = require('../lib/github');
 
 
-if (!process.env.GITHUB_CLIENT_ID)
-  throw new Error('GITHUB_CLIENT_ID not set');
-if (!process.env.GITHUB_CLIENT_SECRET)
-  throw new Error('GITHUB_CLIENT_SECRET not set');
+module.exports = function(env, baseRoute, scope) {
+  if (!env.GITHUB_CLIENT_ID)
+    throw new Error('GITHUB_CLIENT_ID not set');
 
-const oauth2 = require('simple-oauth2').create({
-  client: {
-    id: process.env.GITHUB_CLIENT_ID,
-    secret: process.env.GITHUB_CLIENT_SECRET,
-  },
-  auth: {
-    tokenHost: 'https://github.com',
-    authorizePath: '/login/oauth/authorize',
-    tokenPath: '/login/oauth/access_token',
-  },
-});
+  if (!env.GITHUB_CLIENT_SECRET)
+    throw new Error('GITHUB_CLIENT_SECRET not set');
 
+  const oauth2 = simple_oauth2.create({
+    client: {
+      id: env.GITHUB_CLIENT_ID,
+      secret: env.GITHUB_CLIENT_SECRET,
+    },
+    auth: {
+      tokenHost: 'https://github.com',
+      authorizePath: '/login/oauth/authorize',
+      tokenPath: '/login/oauth/access_token',
+    },
+  });
 
-module.exports = function(baseRoute, scope) {
   const LOGIN_ROUTE = baseRoute + '/login';
   const CALLBACK_ROUTE = baseRoute + '/login/callback';
   const LOGOUT_ROUTE = baseRoute + '/logout';

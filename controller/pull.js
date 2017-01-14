@@ -11,13 +11,6 @@ const configLib = require('../lib/config');
 const config = require('../config');
 
 
-if (!process.env.GITHUB_TOKEN)
-  throw new Error('GITHUB_TOKEN not set');
-
-
-const BOT_TOKEN = process.env.GITHUB_TOKEN;
-
-
 function formatComment(prInfo, prCommits, version, interdiffSha) {
   const vVersion = 'v' + version;
   const out = [];
@@ -65,9 +58,14 @@ function formatComment(prInfo, prCommits, version, interdiffSha) {
 }
 
 
-module.exports = function(baseRoute) {
+module.exports = function(env, baseRoute) {
   if (!baseRoute)
     baseRoute = '';
+
+  if (!env.GITHUB_TOKEN)
+    throw new Error('GITHUB_TOKEN not set');
+
+  const BOT_TOKEN = env.GITHUB_TOKEN;
   const BASE_ROUTE = baseRoute + '/:owner/:repo/pull/:pr';
   const jobs = bg();
 

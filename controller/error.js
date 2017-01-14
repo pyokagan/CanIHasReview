@@ -24,7 +24,7 @@ function formatErrorPage(e) {
 }
 
 
-module.exports = (function() {
+module.exports = (function(env) {
   return function* (next) {
     try {
       yield next;
