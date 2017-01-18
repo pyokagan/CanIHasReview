@@ -23,7 +23,7 @@ describe('lib/github/api#makeGhApi', function() {
     this.ghApi = api.makeGhApi(TEST_TOKEN);
     this.baseNock = nock(api.BASE_URL, {
       reqheaders: {
-        'User-Agent': 'request',
+        'User-Agent': 'CanIHasReview',
         'Authorization': 'token ' + TEST_TOKEN,
         'Accept': 'application/json',
       },
