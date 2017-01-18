@@ -7,12 +7,32 @@
      var nr = (i + 1) + '/' + prCommits.length;
      var subject = prCommits[i].subject;
      var url = 'https://github.com/' + prInfo.base.owner + '/' + prInfo.base.repo + '/pull/' + prInfo.number + '/commits/' + prCommits[i].sha;
+     var hasFailedChecks = prCommits[i].failedChecks && prCommits[i].failedChecks.length;
+     var style = hasFailedChecks ? 'color: red' : '';
 %>
-  <li>[<%= nr %>] <a href="<%= url %>"><%= subject %></a></li>
+    <li style="<%= style %>">[<%= nr %>] <a href="<%= url %>" style="<%= style %>"><%= subject %></a>
+      <% if (hasFailedChecks) { %>
+          <% prCommits[i].failedChecks.forEach(function(check) { %>
+            (✘ <%= check %>)
+          <% }); %>
+      <% } %>
+    </li>
 <% } %>
   </ul>
+
+  <% if (failedChecks.length) { %>
+  <section style="color: red">
+    <p><strong>✘ One or more checks failed:</strong></p>
+    <ul>
+      <% failedChecks.forEach(function(check) { %>
+      <li><%= check %></li>
+      <% }); %>
+    </ul>
+  </section>
+  <% } else { %>
 
   <form action="" method="post">
     <input class="pure-button pure-button-primary" type="submit" value="Submit new iteration">
   </form>
+  <% } %>
 </section>

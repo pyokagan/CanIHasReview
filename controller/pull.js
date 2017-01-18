@@ -72,6 +72,28 @@ function getPrCommits(ghApi, owner, repo, pr) {
 }
 
 
+function checkForMergeCommits(prCommits) {
+  var hasMergeCommit = false;
+  prCommits.forEach(function(prCommit) {
+    if (prCommit.parents.length != 1) {
+      prCommit.failedChecks = prCommit.failedChecks || [];
+      prCommit.failedChecks.push('Merge commit');
+      hasMergeCommit = true;
+    }
+  });
+  return hasMergeCommit ? ['Has merge commit'] : [];
+}
+
+
+function runPrChecks(prCommits) {
+  const failedChecks = [];
+
+  failedChecks.push.apply(failedChecks, checkForMergeCommits(prCommits));
+
+  return failedChecks;
+}
+
+
 module.exports = function(env, baseRoute) {
   if (!baseRoute)
     baseRoute = '';
@@ -92,10 +114,14 @@ module.exports = function(env, baseRoute) {
     const prInfo = yield gh.getPrInfo(this.ghUserApi, owner, repo, pr);
     const prCommits = yield gh.getPrCommits(this.ghUserApi, owner, repo, pr);
 
+    // Run PR checks
+    const failedChecks = runPrChecks(prCommits);
+
     yield this.render('pull/get', {
       title: prInfo.title,
       prInfo: prInfo,
       prCommits: prCommits,
+      failedChecks: failedChecks,
     });
   });
 
@@ -113,6 +139,11 @@ module.exports = function(env, baseRoute) {
 
     // Get PR commits
     const prCommits = yield getPrCommits(this.ghUserApi, owner, repo, pr);
+
+    // Run PR checks
+    const failedChecks = runPrChecks(prCommits);
+    if (failedChecks.length)
+      throw new Error('PR checks failed: ' + JSON.stringify(failedChecks));
 
     const jobName = JSON.stringify([prInfo.base.owner, prInfo.base.repo, prInfo.number]);
     if (jobs.has(jobName))
