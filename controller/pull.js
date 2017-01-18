@@ -85,10 +85,22 @@ function checkForMergeCommits(prCommits) {
 }
 
 
-function runPrChecks(prCommits) {
+function checkForBranchOutOfDate(baseBranchInfo, prCommits) {
+  if (!prCommits.length)
+    return [];
+
+  if (prCommits[0].parents[0] !== baseBranchInfo.head.sha)
+    return ['PR not up to date with base (' + baseBranchInfo.name + ') head. Rebase required.'];
+  else
+    return [];
+}
+
+
+function runPrChecks(baseBranchInfo, prCommits) {
   const failedChecks = [];
 
   failedChecks.push.apply(failedChecks, checkForMergeCommits(prCommits));
+  failedChecks.push.apply(failedChecks, checkForBranchOutOfDate(baseBranchInfo, prCommits));
 
   return failedChecks;
 }
@@ -113,9 +125,10 @@ module.exports = function(env, baseRoute) {
 
     const prInfo = yield gh.getPrInfo(this.ghUserApi, owner, repo, pr);
     const prCommits = yield gh.getPrCommits(this.ghUserApi, owner, repo, pr);
+    const baseBranchInfo = yield gh.getBranchInfo(this.ghUserApi, prInfo.base.owner, prInfo.base.repo, prInfo.base.ref);
 
     // Run PR checks
-    const failedChecks = runPrChecks(prCommits);
+    const failedChecks = runPrChecks(baseBranchInfo, prCommits);
 
     yield this.render('pull/get', {
       title: prInfo.title,
@@ -140,8 +153,11 @@ module.exports = function(env, baseRoute) {
     // Get PR commits
     const prCommits = yield getPrCommits(this.ghUserApi, owner, repo, pr);
 
+    // Get base branch info
+    const baseBranchInfo = yield gh.getBranchInfo(this.ghUserApi, prInfo.base.owner, prInfo.base.repo, prInfo.base.ref);
+
     // Run PR checks
-    const failedChecks = runPrChecks(prCommits);
+    const failedChecks = runPrChecks(baseBranchInfo, prCommits);
     if (failedChecks.length)
       throw new Error('PR checks failed: ' + JSON.stringify(failedChecks));
 
