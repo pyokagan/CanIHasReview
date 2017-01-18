@@ -11,5 +11,8 @@ module.exports = {
     'oss-generic': {
       readyForReviewLabels: ['s.ToReview'],
     },
+    'TEAMMATES/teammates': {
+      readyForReviewLabels: ['s.ToReview'],
+    },
   },
 };
