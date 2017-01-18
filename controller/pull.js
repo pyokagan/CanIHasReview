@@ -94,7 +94,7 @@ module.exports = function(env, baseRoute) {
     const prInfo = yield gh.getPrInfo(this.ghUserApi, owner, repo, pr);
 
     // User must have submitted the PR
-    if (prInfo.user.id != this.session.userId)
+    if (!this.state.userInfo || this.state.userInfo.id != prInfo.user.id)
       throw new Error('User does not own the PR');
 
     const jobName = JSON.stringify([prInfo.base.owner, prInfo.base.repo, prInfo.number]);

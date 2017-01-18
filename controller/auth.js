@@ -37,8 +37,7 @@ module.exports = function(env, baseRoute, scope) {
 
   function isLoggedIn(session) {
     return typeof session === 'object' &&
-      typeof session.token === 'string' &&
-      typeof session.userId === 'number';
+      typeof session.token === 'string';
   }
 
 
@@ -83,7 +82,6 @@ module.exports = function(env, baseRoute, scope) {
     // Get the authenticated user
     const ghUserApi = github.makeGhApi(this.session.token);
     const userInfo = yield github.getUserInfo(ghUserApi);
-    this.session.userId = parseInt(userInfo.id);
 
     // Get proper redirect
     this.redirect(getFinalRedirect(this));
@@ -92,6 +90,7 @@ module.exports = function(env, baseRoute, scope) {
 
   const logoutRoute = route.get(LOGOUT_ROUTE, function* () {
     this.session = null;
+    yield this.render('auth/logout');
   });
 
 
@@ -101,6 +100,7 @@ module.exports = function(env, baseRoute, scope) {
       return this.redirect(LOGIN_ROUTE + '?redirect=' + qs.escape(this.path + this.search));
     }
     this.ghUserApi = github.makeGhApi(this.session.token);
+    this.state.userInfo = yield github.getUserInfo(this.ghUserApi);
     yield next;
   };
 
