@@ -1,5 +1,6 @@
 'use strict';
 const github = require('../../../../lib/github');
+const label = require('../../../../lib/github/issue/label');
 const assert = require('assert');
 const nock = require('nock');
 
@@ -7,7 +8,7 @@ const nock = require('nock');
 describe('lib/github/issue/label#setIssueLabels', function() {
   beforeEach(function() {
     this.ghApi = github.makeGhApi();
-    this.baseNock = nock('https://api.github.com');
+    this.baseNock = nock(github.BASE_URL);
   });
 
   afterEach(function() {
@@ -18,18 +19,22 @@ describe('lib/github/issue/label#setIssueLabels', function() {
     this.baseNock.put('/repos/bob/david/issues/4/labels', ['a', 'b'])
       .reply(200, [{
         id: 1,
-        url: 'https://api.github.com/repos/bob/david/labels/a',
+        url: github.BASE_URL + '/repos/bob/david/labels/a',
         name: 'a',
         color: '000000',
         default: false,
       }, {
         id: 2,
-        url: 'https://api.github.com/repos/bob/david/labels/b',
+        url: github.BASE_URL + '/repos/bob/david/labels/b',
         name: 'b',
         color: 'ffffff',
         default: false,
       }]);
-    const ret = yield github.setIssueLabels(this.ghApi, 'bob', 'david', 4, ['a', 'b']);
+    const ret = yield label.setIssueLabels(this.ghApi, 'bob', 'david', 4, ['a', 'b']);
     assert(!ret);
+  });
+
+  it('is exported', function() {
+    assert.strictEqual(github.setIssueLabels, label.setIssueLabels);
   });
 });
