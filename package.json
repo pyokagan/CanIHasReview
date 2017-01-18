@@ -6,6 +6,7 @@
   "private": true,
   "dependencies": {
     "co": "^4.6.0",
+    "is-promise": "^2.1.0",
     "koa": "^1.2.4",
     "koa-compose": "^2.5.1",
     "koa-ejs": "^3.0.0",
