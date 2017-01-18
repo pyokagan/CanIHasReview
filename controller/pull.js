@@ -11,6 +11,13 @@ const configLib = require('../lib/config');
 const config = require('../config');
 
 
+function escapeMarkdown(str) {
+  // via https://enterprise.github.com/downloads/en/markdown-cheatsheet.pdf
+  // Markdown provides backslash escapes for \`*_[]{}()#+-.!
+  return str.replace(/[\\`*_\[\]{}()#+-.!]/g, '\\$&');
+}
+
+
 function formatComment(prInfo, prCommits, version, interdiffSha) {
   const vVersion = 'v' + version;
   const out = [];
@@ -23,7 +30,7 @@ function formatComment(prInfo, prCommits, version, interdiffSha) {
   // Commit List
   for (var i = 0; i < prCommits.length; i++) {
     const nr = vVersion + ' ' + (i + 1) + '/' + prCommits.length;
-    const subject = prCommits[i].subject;
+    const subject = escapeMarkdown(prCommits[i].subject);
     const url = 'https://github.com/' + prInfo.base.owner + '/' + prInfo.base.repo + '/pull/' + prInfo.number + '/commits/' + prCommits[i].sha;
     out.push(`* [${nr}] [${subject}](${url})`);
   }
