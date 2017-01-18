@@ -58,6 +58,20 @@ function formatComment(prInfo, prCommits, version, interdiffSha) {
 }
 
 
+const MAX_COMMITS = 50;
+function getPrCommits(ghApi, owner, repo, pr) {
+  const prCommits = [];
+  return gh.forEachPrCommit(ghApi, owner, repo, pr, function (prCommit) {
+    if (prCommits.length >= MAX_COMMITS)
+      throw new Error('PR has too many commits. '
+                      + 'PRs can only have a maximum of ' + MAX_COMMITS + ' commits');
+    prCommits.push(prCommit);
+  }).then(function() {
+    return prCommits;
+  });
+}
+
+
 module.exports = function(env, baseRoute) {
   if (!baseRoute)
     baseRoute = '';
@@ -96,6 +110,9 @@ module.exports = function(env, baseRoute) {
     // User must have submitted the PR
     if (!this.state.userInfo || this.state.userInfo.id != prInfo.user.id)
       throw new Error('User does not own the PR');
+
+    // Get PR commits
+    const prCommits = yield getPrCommits(this.ghUserApi, owner, repo, pr);
 
     const jobName = JSON.stringify([prInfo.base.owner, prInfo.base.repo, prInfo.number]);
     if (jobs.has(jobName))
