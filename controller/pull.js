@@ -96,10 +96,12 @@ function checkForBranchOutOfDate(baseBranchInfo, prCommits) {
   if (!prCommits.length)
     return [];
 
-  if (prCommits[0].parents[0] !== baseBranchInfo.head.sha)
-    return ['PR not up to date with base (' + baseBranchInfo.name + ') head. Rebase required.'];
-  else
-    return [];
+  for (const commit of prCommits) {
+    if (commit.parents[0] === baseBranchInfo.head.sha)
+      return [];
+  }
+
+  return ['PR not up to date with base (' + baseBranchInfo.name + ') head. Rebase required.'];
 }
 
 
