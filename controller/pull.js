@@ -44,7 +44,7 @@ function formatComment(prInfo, prCommits, version, interdiffSha) {
 
   // Minibar: Interdiff
   if (interdiffSha) {
-    const interdiffUrl = 'https://github.com/' + prInfo.base.owner + '/' + prInfo.base.repo + '/commit/' + interdiffSha;
+    const interdiffUrl = `https://github.com/${prInfo.base.owner}/${prInfo.base.repo}/compare/${interdiffSha}~1...${interdiffSha}`;
     miniBar.push('([:chart_with_upwards_trend: Interdiff between v' + (version - 1) + ' and v' + version + '](' + interdiffUrl + '))');
   }
 
