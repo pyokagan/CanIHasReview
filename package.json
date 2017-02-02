@@ -14,7 +14,6 @@
     "koa-route": "^2.4.2",
     "koa-session": "^3.4.0",
     "koa-sslify": "^1.1.0",
-    "purecss": "^0.6.2",
     "request-promise-native": "^1.0.3",
     "simple-oauth2": "^1.0.2",
     "tmp-promise": "^1.0.2"

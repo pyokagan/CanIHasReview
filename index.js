@@ -7,7 +7,6 @@ const koa_ejs = require('koa-ejs');
 const koa_sslify = require('koa-sslify');
 
 const controller_error = require('./controller/error');
-const controller_purecss = require('./controller/purecss');
 const controller_auth = require('./controller/auth');
 const controller_pull = require('./controller/pull');
 
@@ -39,9 +38,6 @@ function makeApp(env) {
       trustProtoHeader: !!env.KOA_PROXY,
     }));
   }
-
-  // Static content
-  app.use(controller_purecss(env, '/purecss'));
 
   // Dynamic content
   app.use(koa_session(app));
