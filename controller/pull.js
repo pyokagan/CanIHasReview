@@ -222,6 +222,20 @@ module.exports = function(env, baseRoute) {
     if (repoConfig.readyForReviewLabels)
       yield gh.setIssueLabels(ghBotApi, prInfo.base.owner, prInfo.base.repo,
                               prInfo.number, repoConfig.readyForReviewLabels);
+
+    // Re-request reviews
+    try {
+      const collaborators = (yield gh.getRepoCollaborators(ghBotApi,
+                                                           prInfo.base.owner,
+                                                           prInfo.base.repo)).map(function(x) { return x.login; });
+      const pastReviews = yield gh.summarizePrReviews(ghBotApi, prInfo.base.owner, prInfo.base.repo, prInfo.number);
+      const reviewers = Object.keys(pastReviews).filter(function(x) { return collaborators.indexOf(x) >= 0; });
+      if (reviewers.length > 0)
+        yield gh.createPrReviewRequest(ghBotApi, prInfo.base.owner, prInfo.base.repo, prInfo.number, reviewers);
+    } catch (e) {
+      console.error('Re-request reviews failed');
+      console.error(e.stack);
+    }
   }
 
   return compose([getRoute, postRoute]);
