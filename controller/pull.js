@@ -229,7 +229,11 @@ module.exports = function(env, baseRoute) {
                                                            prInfo.base.owner,
                                                            prInfo.base.repo)).map(function(x) { return x.login; });
       const pastReviews = yield gh.summarizePrReviews(ghBotApi, prInfo.base.owner, prInfo.base.repo, prInfo.number);
-      const reviewers = Object.keys(pastReviews).filter(function(x) { return collaborators.indexOf(x) >= 0; });
+      const reviewers = Object.keys(pastReviews)
+                          .filter(function(login) {
+                            return collaborators.indexOf(login) >= 0 &&
+                                    pastReviews[login].state !== 'APPROVED';
+                          });
       if (reviewers.length > 0)
         yield gh.createPrReviewRequest(ghBotApi, prInfo.base.owner, prInfo.base.repo, prInfo.number, reviewers);
     } catch (e) {
