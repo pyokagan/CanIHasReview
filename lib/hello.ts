@@ -3,7 +3,6 @@
 /**
  * Returns the string 'Hello World!'.
  */
-function hello() {
+export function hello(): string {
     return 'Hello World!';
 }
-exports.hello = hello;

@@ -36,7 +36,7 @@ configs.push(serverConfig);
 
 // WebUi
 const webUiEntries = {};
-glob.sync('webui/**/entry.js', { cwd: __dirname }).forEach(filepath => {
+glob.sync('webui/**/entry.{ts,tsx}', { cwd: __dirname }).forEach(filepath => {
     const name = path.dirname(filepath).replace(/[/\\]/g, '_');
     webUiEntries[name] = './' + filepath;
 });
