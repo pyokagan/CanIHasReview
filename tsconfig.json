@@ -1,0 +1,29 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "alwaysStrict": true,
+        "baseUrl": ".",
+        "experimentalDecorators": true,
+        "jsx": "react",
+        "module": "es2015",
+        "moduleResolution": "node",
+        "newLine": "LF",
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "paths": {
+            "*": ["types/*"],
+            "@config": ["config"],
+            "@lib": ["lib"],
+            "@lib/*": ["lib/*"],
+            "@webui": ["webui"],
+            "@webui/*": ["webui/*"]
+        },
+        "plugins": [
+            {"name": "tslint-language-service"}
+        ],
+        "pretty": true,
+        "sourceMap": true,
+        "strict": true,
+        "target": "ES6"
+    }
+}
