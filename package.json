@@ -1,0 +1,11 @@
+{
+    "name": "canihasreview",
+    "version": "0.0.2",
+    "description": "GitHub Pull Request versioning utility",
+    "license": "MIT",
+    "private": true,
+    "engines": {
+        "node": ">=7.9.0"
+    },
+    "files": []
+}
