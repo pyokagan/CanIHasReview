@@ -8,10 +8,33 @@
         "node": ">=7.9.0"
     },
     "files": [
-        "lib",
-        "server.js"
+        "dist"
     ],
     "scripts": {
-        "start": "node server"
+        "all": "npm-run-all",
+        "build:webpack": "webpack --progress",
+        "build": "npm-run-all build:webpack",
+        "start": "node dist/server",
+        "watch:webpack": "webpack -w --progress",
+        "watch:server": "nodemon --watch dist dist/server",
+        "watch": "npm-run-all --parallel \"watch:*\"",
+        "clean:dist": "rimraf dist",
+        "clean": "npm-run-all \"clean:*\"",
+        "prepublishOnly": "npm-run-all clean build"
+    },
+    "dependencies": {
+        "source-map-support": "^0.4.15"
+    },
+    "devDependencies": {
+        "compression-webpack-plugin": "^0.4.0",
+        "file-loader": "^0.11.1",
+        "glob": "^7.1.1",
+        "nodemon": "^1.11.0",
+        "npm-run-all": "^4.0.2",
+        "rimraf": "^2.6.1",
+        "webpack": "^2.5.1",
+        "webpack-merge": "^4.1.0",
+        "webpack-node-externals": "^1.6.0",
+        "webpack-stats-plugin": "^0.1.5"
     }
 }
