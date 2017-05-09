@@ -27,13 +27,24 @@
         "prepublishOnly": "npm-run-all clean build"
     },
     "dependencies": {
+        "http-errors": "^1.6.1",
+        "koa": "^2.2.0",
+        "koa-compose": "^4.0.0",
+        "koa-mount": "^3.0.0",
+        "koa-static": "^3.0.0",
         "lodash": "^4.17.4",
         "mz": "^2.6.0",
+        "path-to-regexp": "^1.7.0",
         "querystringify": "^1.0.0",
         "source-map-support": "^0.4.15",
         "url-parse": "^1.1.9"
     },
     "devDependencies": {
+        "@types/http-errors": "^1.5.34",
+        "@types/koa": "^2.0.39",
+        "@types/koa-compose": "^3.2.2",
+        "@types/koa-mount": "^2.0.18",
+        "@types/koa-static": "^2.0.22",
         "@types/lodash": "^4.14.64",
         "@types/mocha": "^2.2.41",
         "@types/mz": "0.0.31",
