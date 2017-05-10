@@ -7,6 +7,7 @@ import path from 'path';
 import appConfig from './config';
 import * as KoaLogger from './lib/koa-logger';
 import notFound from './lib/koa-notfound';
+import * as WebUi from './webui/server';
 
 /**
  * Server configuration.
@@ -55,6 +56,7 @@ app.use(mount(appConfig.publicPath, compose([
     }),
     notFound(),
 ])));
+app.use(mount('/', WebUi.middleware({})));
 
 const server = http.createServer(app.callback());
 server.listen(config.PORT, 'localhost');
