@@ -13,6 +13,11 @@ declare const __webpack_filename: string;
  */
 declare const __webpack_mocha: boolean;
 
+/**
+ * Initial props sent from the server.
+ */
+declare const __INIT_PROPS: any;
+
 interface NodeModule {
     /**
      * Webpack only: the module ID.

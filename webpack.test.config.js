@@ -12,6 +12,7 @@ if (isCoverage) {
         test: /\.(js|tsx?)$/,
         include: [
             path.resolve(__dirname, 'lib'),
+            path.resolve(__dirname, 'webui'),
         ],
         enforce: 'post',
         use: {

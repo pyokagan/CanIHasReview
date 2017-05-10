@@ -14,6 +14,7 @@ import {
 import {
     resolveFsPath,
 } from '@lib/url-path';
+import * as WebUi from '@webui/server';
 import http from 'http';
 import createHttpError from 'http-errors';
 import path from 'path';
@@ -47,7 +48,7 @@ async function main(req: Request, resp: Response): Promise<void> {
         return;
     }
 
-    throw createHttpError(HttpStatus.NOT_FOUND);
+    await WebUi.main(req, resp);
 }
 
 /**

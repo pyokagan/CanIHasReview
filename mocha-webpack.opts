@@ -2,3 +2,5 @@
 --reporter dot
 --require source-map-support/register
 lib/**/*.ts
+webui/**/*.ts
+webui/**/*.tsx
