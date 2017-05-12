@@ -23,7 +23,8 @@ const serverConfig = webpackMerge(baseConfig, {
             banner: 'require(\'source-map-support\').install();\n' +
                 'var __webpack_dirname = __dirname;\n' +
                 'var __webpack_filename = __filename;\n' +
-                'var __webpack_mocha = false;',
+                'var __webpack_mocha = false;\n' +
+                'require(\'dotenv\').config();',
             raw: true,
             entryOnly: true,
         }),
