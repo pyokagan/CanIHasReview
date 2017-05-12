@@ -3,3 +3,4 @@
 /canihasreview-*.tgz
 /dist/
 /.tmp/
+/.env
