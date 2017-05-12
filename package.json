@@ -27,10 +27,16 @@
         "prepublishOnly": "npm-run-all clean build"
     },
     "dependencies": {
-        "source-map-support": "^0.4.15"
+        "lodash": "^4.17.4",
+        "mz": "^2.6.0",
+        "querystringify": "^1.0.0",
+        "source-map-support": "^0.4.15",
+        "url-parse": "^1.1.9"
     },
     "devDependencies": {
+        "@types/lodash": "^4.14.64",
         "@types/mocha": "^2.2.41",
+        "@types/mz": "0.0.31",
         "@types/node": "^7.0.18",
         "@types/sinon": "^2.2.1",
         "compression-webpack-plugin": "^0.4.0",
