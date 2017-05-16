@@ -22,6 +22,7 @@ export class MiddlewareTest {
     async 'only responds to /'(): Promise<void> {
         const render = sinon.spy();
         const ctx1: Ctx = Object.assign({
+            auth: null,
             render,
         }, createUrlCtx('GET', 'http://localhost//'));
         const next = sinon.stub().resolves();
@@ -33,6 +34,7 @@ export class MiddlewareTest {
 
         // without next
         const ctx2: Ctx = Object.assign({
+            auth: null,
             render,
         }, createUrlCtx('GET', 'http://localhost/./'));
         await middleware(ctx2);
@@ -43,6 +45,7 @@ export class MiddlewareTest {
     async 'only responds to GET or HEAD'(): Promise<void> {
         const render = sinon.spy();
         const ctx1: Ctx = Object.assign({
+            auth: null,
             render,
         }, createUrlCtx('POST', 'http://localhost/'));
         const next = sinon.stub().resolves();
@@ -54,6 +57,7 @@ export class MiddlewareTest {
 
         // without next
         const ctx2: Ctx = Object.assign({
+            auth: null,
             render,
         }, createUrlCtx('PUT', 'http://localhost/'));
         await middleware(ctx2);
@@ -64,11 +68,15 @@ export class MiddlewareTest {
     async 'renders Home component'(): Promise<void> {
         const render = sinon.spy();
         const ctx = Object.assign({
+            auth: null,
             render,
         }, createUrlCtx('GET', 'http://localhost/'));
         await middleware(ctx);
         const expectedProps: HomeProps = {
+            ghUserInfo: null,
             mountPath: '/',
+            path: '/',
+            search: '',
         };
         sinon.assert.calledOnce(render);
         sinon.assert.calledWith(render, __dirname, 'CanIHasReview', Home, expectedProps);
@@ -78,11 +86,15 @@ export class MiddlewareTest {
     async 'responds to GET / with query string'(): Promise<void> {
         const render = sinon.spy();
         const ctx = Object.assign({
+            auth: null,
             render,
         }, createUrlCtx('GET', 'http://localhost/?some=query&string'));
         await middleware(ctx);
         const expectedProps: HomeProps = {
+            ghUserInfo: null,
             mountPath: '/',
+            path: '/',
+            search: '?some=query&string',
         };
         sinon.assert.calledOnce(render);
         sinon.assert.calledWith(render, __dirname, 'CanIHasReview', Home, expectedProps);
@@ -92,12 +104,16 @@ export class MiddlewareTest {
     async 'passes down mountPath'(): Promise<void> {
         const render = sinon.spy();
         const ctx = Object.assign({
+            auth: null,
             mountPath: 'foo',
             render,
         }, createUrlCtx('HEAD', 'http://localhost/'));
         await middleware(ctx);
         const expectedProps: HomeProps = {
+            ghUserInfo: null,
             mountPath: 'foo',
+            path: '/',
+            search: '',
         };
         sinon.assert.calledOnce(render);
         sinon.assert.calledWith(render, __dirname, 'CanIHasReview', Home, expectedProps);

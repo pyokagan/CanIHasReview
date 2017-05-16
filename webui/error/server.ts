@@ -5,13 +5,16 @@
 import assert from 'assert';
 import http from 'http';
 import { HttpError } from 'http-errors';
-import { MountCtx, ResponseCtx } from '../../lib/koa-ctx';
+import { MountCtx, ResponseCtx, UrlCtx } from '../../lib/koa-ctx';
 import { LoggerConsole, LoggerCtx } from '../../lib/koa-logger';
+import AuthCtx from '../AuthCtx';
 import { RenderCtx } from '../RenderCtx';
 import ErrorPage from './entry';
 
 export interface Ctx extends
+    UrlCtx,
     Partial<ResponseCtx>,
+    Partial<Readonly<AuthCtx>>,
     Partial<Readonly<RenderCtx>>,
     Partial<Readonly<LoggerCtx>>,
     Partial<Readonly<MountCtx>> { }
@@ -44,10 +47,14 @@ export async function middleware(ctx: Ctx, next?: () => Promise<void>): Promise<
         const expose = typeof e.expose === 'boolean' ? e.expose : status < 500;
         const title = `${status} ${http.STATUS_CODES[status] || 'Unknown Error'}`;
         const message: string = expose ? e.message : '';
+        const ghUserInfo = ctx.auth ? ctx.auth.ghUserInfo : null;
         ctx.render(__dirname, title, ErrorPage, {
+            ghUserInfo,
             message,
             mountPath: ctx.mountPath || '/',
+            path: ctx.path,
             reqId: expose ? undefined : ctx.reqId,
+            search: ctx.search,
             title,
         });
     }

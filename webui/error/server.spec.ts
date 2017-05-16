@@ -2,6 +2,7 @@ import assert from 'assert';
 import { HttpError } from 'http-errors';
 import { suite, test } from 'mocha-typescript';
 import sinon from 'sinon';
+import { createUrlCtx } from '../../lib/koa-ctx';
 import { createStubConsole, StubLoggerConsole } from '../../lib/koa-logger.spec';
 import { ErrorPage, ErrorPageProps } from './entry';
 import { Ctx, middleware } from './server';
@@ -18,11 +19,11 @@ export class MiddlewareTest {
         this.render = sinon.spy();
         this.console = createStubConsole();
         this.reqId = 'someId';
-        this.ctx = {
+        this.ctx = Object.assign(createUrlCtx('GET', 'http://localhost/'), {
             console: this.console,
             render: this.render,
             reqId: this.reqId,
-        };
+        });
         this.expectedCtx = Object.assign({}, this.ctx);
     }
 
@@ -53,9 +54,12 @@ export class MiddlewareTest {
         };
         await middleware(this.ctx, next);
         const expectedProps: ErrorPageProps = {
+            ghUserInfo: null,
             message: 'Hello World!',
             mountPath: '/',
+            path: '/',
             reqId: undefined, // "undefined" since expose is true
+            search: '',
             title: '404 Not Found',
         };
         sinon.assert.calledOnce(this.render);
@@ -77,9 +81,12 @@ export class MiddlewareTest {
         };
         await middleware(this.ctx, next);
         const expectedProps: ErrorPageProps = {
+            ghUserInfo: null,
             message: 'Goodbye World!',
             mountPath: '/',
+            path: '/',
             reqId: undefined, // "undefined" since expose is true
+            search: '',
             title: '123 Unknown Error',
         };
         sinon.assert.calledOnce(this.render);
@@ -97,9 +104,12 @@ export class MiddlewareTest {
         };
         await middleware(this.ctx, next);
         const expectedProps: ErrorPageProps = {
+            ghUserInfo: null,
             message: 'Really unexpected error',
             mountPath: '/',
+            path: '/',
             reqId: undefined, // "undefined" since expose is true
+            search: '',
             title: '500 Internal Server Error',
         };
         sinon.assert.calledOnce(this.render);
@@ -120,9 +130,12 @@ export class MiddlewareTest {
         };
         await middleware(this.ctx, next);
         const expectedProps: ErrorPageProps = {
+            ghUserInfo: null,
             message: '',
             mountPath: '/',
+            path: '/',
             reqId: this.reqId, // defined since expose is false
+            search: '',
             title: '200 OK',
         };
         sinon.assert.calledOnce(this.render);
@@ -141,9 +154,12 @@ export class MiddlewareTest {
         };
         await middleware(this.ctx, next);
         const expectedProps: ErrorPageProps = {
+            ghUserInfo: null,
             message: '',
             mountPath: '/',
+            path: '/',
             reqId: this.reqId, // defined since expose is false
+            search: '',
             title: '500 Internal Server Error',
         };
         sinon.assert.calledOnce(this.render);
@@ -158,9 +174,12 @@ export class MiddlewareTest {
         const next = async () => { throw new Error(); };
         await middleware(this.ctx, next);
         const expectedProps: ErrorPageProps = {
+            ghUserInfo: null,
             message: '',
             mountPath: 'foo',
+            path: '/',
             reqId: this.reqId, // defined since expose is false
+            search: '',
             title: '500 Internal Server Error',
         };
         sinon.assert.calledOnce(this.render);

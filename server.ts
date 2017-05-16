@@ -2,6 +2,7 @@ import http from 'http';
 import Koa from 'koa';
 import compose from 'koa-compose';
 import mount from 'koa-mount';
+import session from 'koa-session';
 import serve from 'koa-static';
 import path from 'path';
 import appConfig from './config';
@@ -16,6 +17,8 @@ interface Config {
     KOA_KEYS: string[];
     KOA_PROXY: boolean;
     PORT: number;
+    GITHUB_CLIENT_ID: string;
+    GITHUB_CLIENT_SECRET: string;
 }
 
 /**
@@ -37,6 +40,8 @@ function extractEnvVar(key: string, defaultValue?: string): string {
  */
 function extractConfigFromEnv(): Config {
     return {
+        GITHUB_CLIENT_ID: extractEnvVar('GITHUB_CLIENT_ID'),
+        GITHUB_CLIENT_SECRET: extractEnvVar('GITHUB_CLIENT_SECRET'),
         KOA_KEYS: extractEnvVar('KOA_KEYS').split(/s+/),
         KOA_PROXY: !!extractEnvVar('KOA_PROXY', ''),
         PORT: parseInt(extractEnvVar('PORT', '5000'), 10),
@@ -56,7 +61,11 @@ app.use(mount(appConfig.publicPath, compose([
     }),
     notFound(),
 ])));
-app.use(mount('/', WebUi.middleware({})));
+app.use(session(app));
+app.use(mount('/', WebUi.middleware({
+    GITHUB_CLIENT_ID: config.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: config.GITHUB_CLIENT_SECRET,
+})));
 
 const server = http.createServer(app.callback());
 server.listen(config.PORT, 'localhost');

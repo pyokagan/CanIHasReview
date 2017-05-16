@@ -4,12 +4,14 @@
  */
 import assert from 'assert';
 import { isUrlCtx, MountCtx, UrlCtx } from '../../lib/koa-ctx';
+import AuthCtx from '../AuthCtx';
 import { RenderCtx } from '../RenderCtx';
 import { homeRoute } from '../routes';
 import Home from './entry';
 
 export interface Ctx extends
     UrlCtx,
+    Partial<Readonly<AuthCtx>>,
     Partial<Readonly<RenderCtx>>,
     Partial<Readonly<MountCtx>> {}
 
@@ -24,6 +26,10 @@ export async function middleware(ctx: Ctx, next?: () => Promise<void>): Promise<
         throw new TypeError('ctx.render not provided');
     }
 
+    if (typeof ctx.auth === 'undefined') {
+        throw new TypeError('ctx.auth not provided');
+    }
+
     if (!homeRoute.match(ctx, 'GET')) {
         if (next) {
             await next();
@@ -32,7 +38,10 @@ export async function middleware(ctx: Ctx, next?: () => Promise<void>): Promise<
     }
 
     ctx.render(__dirname, 'CanIHasReview', Home, {
+        ghUserInfo: ctx.auth ? ctx.auth.ghUserInfo : null,
         mountPath: ctx.mountPath || '/',
+        path: ctx.path,
+        search: ctx.search,
     });
 }
 
