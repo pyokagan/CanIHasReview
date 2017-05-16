@@ -4,6 +4,7 @@ import {
     Response,
     setHeader,
 } from '@lib/http';
+import handleAuthRoutes from '@webui/auth/server';
 import handleError from '@webui/error/server';
 import handleHome from '@webui/home/server';
 import {
@@ -20,6 +21,8 @@ import {
 } from './server';
 
 const sessionSecret = 'abc123';
+const githubClientId = 'dummyGithubClientId';
+const githubClientSecret = 'dummyGithubClientSecret';
 
 @suite('webui/server#main')
 export class MainTest {
@@ -33,12 +36,41 @@ export class MainTest {
         const resp = new Response();
         const expectedResp = new Response();
         await handleHome({
+            auth: undefined,
             req,
             resp: expectedResp,
         });
         setCacheHeader(expectedResp);
         setSession(expectedResp, {}, { secret: sessionSecret });
         await main(req, resp, {
+            githubClientId,
+            githubClientSecret,
+            sessionSecret,
+        });
+        assertResp(resp, expectedResp);
+    }
+
+    @test
+    async 'routes to auth'(): Promise<void> {
+        const req = createRequest({
+            id: '',
+            method: 'GET',
+            url: 'http://localhost/auth/login',
+        });
+        const resp = new Response();
+        const expectedResp = new Response();
+        await handleAuthRoutes({
+            githubClientId,
+            githubClientSecret,
+            req,
+            resp: expectedResp,
+            session: {},
+        });
+        setCacheHeader(expectedResp);
+        setSession(expectedResp, {}, { secret: sessionSecret });
+        await main(req, resp, {
+            githubClientId,
+            githubClientSecret,
             sessionSecret,
         });
         assertResp(resp, expectedResp);
@@ -54,6 +86,7 @@ export class MainTest {
         const resp = new Response();
         const expectedResp = new Response();
         await handleError({
+            auth: undefined,
             e: createHttpError(HttpStatus.NOT_FOUND),
             req,
             resp: expectedResp,
@@ -61,6 +94,8 @@ export class MainTest {
         setCacheHeader(expectedResp);
         setSession(expectedResp, {}, { secret: sessionSecret });
         await main(req, resp, {
+            githubClientId,
+            githubClientSecret,
             sessionSecret,
         });
         assertResp(resp, expectedResp);

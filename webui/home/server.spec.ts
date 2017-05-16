@@ -25,6 +25,7 @@ export class HandlerTest {
         });
         const resp = new Response();
         await assertThrowsAsync(() => handleHome({
+            auth: undefined,
             req,
             resp,
         }));
@@ -39,6 +40,7 @@ export class HandlerTest {
         });
         const resp = new Response();
         await assertThrowsAsync(() => handleHome({
+            auth: undefined,
             req,
             resp,
         }));
@@ -54,9 +56,13 @@ export class HandlerTest {
         const resp = new Response();
         const expectedResp = new Response();
         renderServer(expectedResp, __dirname, 'CanIHasReview', Home, {
+            ghUserInfo: null,
             mountPath: '',
+            pathname: req.pathname,
+            search: req.search,
         });
         await handleHome({
+            auth: undefined,
             req,
             resp,
         });
@@ -73,9 +79,13 @@ export class HandlerTest {
         const resp = new Response();
         const expectedResp = new Response();
         renderServer(expectedResp, __dirname, 'CanIHasReview', Home, {
+            ghUserInfo: null,
             mountPath: '',
+            pathname: req.pathname,
+            search: req.search,
         });
         await handleHome({
+            auth: undefined,
             req,
             resp,
         });
@@ -93,9 +103,13 @@ export class HandlerTest {
         const resp = new Response();
         const expectedResp = new Response();
         renderServer(expectedResp, __dirname, 'CanIHasReview', Home, {
+            ghUserInfo: null,
             mountPath: '/foo',
+            pathname: req.pathname,
+            search: req.search,
         });
         await handleHome({
+            auth: undefined,
             req,
             resp,
         });

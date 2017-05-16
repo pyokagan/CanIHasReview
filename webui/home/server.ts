@@ -7,6 +7,9 @@ import {
     Request,
     Response,
 } from '@lib/http';
+import {
+    AuthContext,
+} from '@webui/auth/server';
 import renderServer from '@webui/renderServer';
 import {
     homeRoute,
@@ -17,6 +20,7 @@ import Home from './entry';
 type Options = {
     req: Request;
     resp: Response;
+    auth: AuthContext | undefined;
 };
 
 export async function handleHome(opts: Options): Promise<void> {
@@ -32,7 +36,10 @@ export async function handleHome(opts: Options): Promise<void> {
     }
 
     renderServer(resp, __dirname, 'CanIHasReview', Home, {
+        ghUserInfo: opts.auth ? opts.auth.ghUserInfo : null,
         mountPath: req.mountPath,
+        pathname: req.pathname,
+        search: req.search,
     });
 }
 
