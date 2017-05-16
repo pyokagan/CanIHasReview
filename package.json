@@ -29,6 +29,7 @@
     "dependencies": {
         "bootstrap": "^4.0.0-alpha.6",
         "dotenv": "^4.0.0",
+        "fetch-ponyfill": "^4.0.0",
         "http-errors": "^1.6.1",
         "jquery": "^3.2.1",
         "koa": "^2.2.0",
