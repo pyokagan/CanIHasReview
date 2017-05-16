@@ -16,6 +16,10 @@ const cookieName = 'CIHRTOKEN';
  * Session data.
  */
 export interface Session {
+    /**
+     * GitHub authorization token, if user is logged in.
+     */
+    ghToken?: string;
 }
 
 export default Session;
@@ -36,7 +40,10 @@ export function getSession(req: Request, options: GetSessionOptions): Session | 
         if (typeof decodedToken !== 'object' || decodedToken === null) {
             return;
         }
-        return {};
+        const tok: Partial<Session> = decodedToken;
+        return {
+            ghToken: tok.ghToken,
+        };
     } catch (e) {
         return;
     }

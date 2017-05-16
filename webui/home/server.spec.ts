@@ -57,7 +57,10 @@ export class HandlerTest {
         const resp = new Response();
         const expectedResp = new Response();
         renderServer(expectedResp, __dirname, 'CanIHasReview', Home, {
+            ghUserInfo: null,
             mountPath: '',
+            pathname: req.pathname,
+            search: req.search,
         });
         const ret = await handleHome({
             req,
@@ -77,7 +80,10 @@ export class HandlerTest {
         const resp = new Response();
         const expectedResp = new Response();
         renderServer(expectedResp, __dirname, 'CanIHasReview', Home, {
+            ghUserInfo: null,
             mountPath: '',
+            pathname: req.pathname,
+            search: req.search,
         });
         const ret = await handleHome({
             req,
@@ -98,7 +104,10 @@ export class HandlerTest {
         const resp = new Response();
         const expectedResp = new Response();
         renderServer(expectedResp, __dirname, 'CanIHasReview', Home, {
+            ghUserInfo: null,
             mountPath: '/foo',
+            pathname: req.pathname,
+            search: req.search,
         });
         const ret = await handleHome({
             req,

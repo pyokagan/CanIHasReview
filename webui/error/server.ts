@@ -8,6 +8,9 @@ import {
     RequestConsole,
     Response,
 } from '@lib/http';
+import {
+    AuthContext,
+} from '@webui/auth/server';
 import renderServer from '@webui/renderServer';
 import {
     STATUS_CODES,
@@ -21,6 +24,7 @@ type Options = {
     req: Request;
     resp: Response;
     e: any;
+    auth?: AuthContext;
 };
 
 export async function handleError(opts: Options): Promise<void> {
@@ -32,9 +36,12 @@ export async function handleError(opts: Options): Promise<void> {
     const title = `${status} ${STATUS_CODES[status] || 'Unknown Error'}`;
     const message: string = expose ? e.message : '';
     renderServer(resp, __dirname, title, ErrorPage, {
+        ghUserInfo: opts.auth ? opts.auth.ghUserInfo : null,
         message,
         mountPath: req.mountPath,
+        pathname: req.pathname,
         reqId: expose ? undefined : req.id,
+        search: req.search,
         title,
     });
 }

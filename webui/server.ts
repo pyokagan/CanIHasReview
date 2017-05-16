@@ -9,6 +9,11 @@ import {
     setHeader,
 } from '@lib/http';
 import createHttpError from 'http-errors';
+import {
+    AuthContext,
+    handleAuthRoutes,
+    makeAuthContext,
+} from './auth/server';
 import handleError from './error/server';
 import handleHome from './home/server';
 import {
@@ -20,6 +25,8 @@ import {
 type Options = {
     sessionSecret: string;
     secure?: boolean;
+    githubClientId: string;
+    githubClientSecret: string;
 };
 
 /**
@@ -33,8 +40,17 @@ export async function main(req: Request, resp: Response, options: Options): Prom
     }) || {};
     req.console.log(`Session data: ${JSON.stringify(session, null, 2)}`);
 
+    const auth = await makeAuthContext(session);
+
     try {
-        const handled = await handleRoutes(req, resp, session);
+        const handled = await handleRoutes({
+            auth,
+            githubClientId: options.githubClientId,
+            githubClientSecret: options.githubClientSecret,
+            req,
+            resp,
+            session,
+        });
 
         setSession(resp, session, {
             secret: options.sessionSecret,
@@ -53,12 +69,33 @@ export async function main(req: Request, resp: Response, options: Options): Prom
     }
 }
 
-async function handleRoutes(req: Request, resp: Response, session: Session): Promise<boolean> {
+type RouteOptions = {
+    req: Request;
+    resp: Response;
+    session: Session;
+    auth: AuthContext | undefined;
+    githubClientId: string;
+    githubClientSecret: string;
+};
+
+async function handleRoutes(opts: RouteOptions): Promise<boolean> {
     let handled = false;
 
     handled = await handleHome({
-        req,
-        resp,
+        auth: opts.auth,
+        req: opts.req,
+        resp: opts.resp,
+    });
+    if (handled) {
+        return true;
+    }
+
+    handled = await handleAuthRoutes({
+        githubClientId: opts.githubClientId,
+        githubClientSecret: opts.githubClientSecret,
+        req: opts.req,
+        resp: opts.resp,
+        session: opts.session,
     });
     if (handled) {
         return true;
