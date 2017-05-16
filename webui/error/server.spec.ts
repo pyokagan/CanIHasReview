@@ -36,6 +36,7 @@ export class HandlerTest {
             statusCode: HttpStatus.NOT_FOUND,
         });
         await handleError({
+            auth: undefined,
             e,
             req: this.req,
             resp,
@@ -44,9 +45,12 @@ export class HandlerTest {
         const expectedResp = new Response();
         expectedResp.status = HttpStatus.NOT_FOUND;
         renderServer(expectedResp, __dirname, '404 Not Found', ErrorPage, {
+            ghUserInfo: null,
             message: 'Hello World!',
             mountPath: '',
+            pathname: this.req.pathname,
             reqId: undefined, // "undefined" since expose is true
+            search: this.req.search,
             title: '404 Not Found',
         });
         assertResp(resp, expectedResp);
@@ -61,6 +65,7 @@ export class HandlerTest {
             statusCode: 123,
         });
         await handleError({
+            auth: undefined,
             e,
             req: this.req,
             resp,
@@ -69,9 +74,12 @@ export class HandlerTest {
         const expectedResp = new Response();
         expectedResp.status = 123;
         renderServer(expectedResp, __dirname, '123 Unknown Error', ErrorPage, {
+            ghUserInfo: null,
             message: 'Goodbye World!',
             mountPath: '',
+            pathname: this.req.pathname,
             reqId: undefined, // "undefined" since expose is true
+            search: this.req.search,
             title: '123 Unknown Error',
         });
         assertResp(resp, expectedResp);
@@ -84,6 +92,7 @@ export class HandlerTest {
             expose: true,
         });
         await handleError({
+            auth: undefined,
             e,
             req: this.req,
             resp,
@@ -92,9 +101,12 @@ export class HandlerTest {
         const expectedResp = new Response();
         expectedResp.status = HttpStatus.INTERNAL_SERVER_ERROR;
         renderServer(expectedResp, __dirname, '500 Internal Server Error', ErrorPage, {
+            ghUserInfo: null,
             message: 'Really unexpected error',
             mountPath: '',
+            pathname: this.req.pathname,
             reqId: undefined, // "undefined" since expose is true
+            search: this.req.search,
             title: '500 Internal Server Error',
         });
         assertResp(resp, expectedResp);
@@ -109,6 +121,7 @@ export class HandlerTest {
             statusCode: 200,
         });
         await handleError({
+            auth: undefined,
             e,
             req: this.req,
             resp,
@@ -117,9 +130,12 @@ export class HandlerTest {
         const expectedResp = new Response();
         expectedResp.status = 200;
         renderServer(expectedResp, __dirname, '200 OK', ErrorPage, {
+            ghUserInfo: null,
             message: '',
             mountPath: '',
+            pathname: this.req.pathname,
             reqId: this.reqId, // defined since expose is false
+            search: this.req.search,
             title: '200 OK',
         });
         assertResp(resp, expectedResp);
@@ -133,6 +149,7 @@ export class HandlerTest {
             statusCode: 500,
         });
         await handleError({
+            auth: undefined,
             e,
             req: this.req,
             resp,
@@ -141,9 +158,12 @@ export class HandlerTest {
         const expectedResp = new Response();
         expectedResp.status = 500;
         renderServer(expectedResp, __dirname, '500 Internal Server Error', ErrorPage, {
+            ghUserInfo: null,
             message: '',
             mountPath: '',
+            pathname: this.req.pathname,
             reqId: this.reqId, // defined since expose is false
+            search: this.req.search,
             title: '500 Internal Server Error',
         });
         assertResp(resp, expectedResp);
@@ -155,6 +175,7 @@ export class HandlerTest {
         const resp = new Response();
         const e = new Error();
         await handleError({
+            auth: undefined,
             e,
             req: this.req,
             resp,
@@ -163,9 +184,12 @@ export class HandlerTest {
         const expectedResp = new Response();
         expectedResp.status = 500;
         renderServer(expectedResp, __dirname, '500 Internal Server Error', ErrorPage, {
+            ghUserInfo: null,
             message: '',
             mountPath: '/foo',
+            pathname: this.req.pathname,
             reqId: this.reqId, // defined since expose is false
+            search: this.req.search,
             title: '500 Internal Server Error',
         });
         assertResp(resp, expectedResp);

@@ -3,6 +3,10 @@
  * Common Template component.
  */
 import {
+    MiniPublicUserInfo,
+} from '@lib/github';
+import {
+    authLoginRoute,
     homeRoute,
 } from '@webui/routes';
 import React from 'react';
@@ -12,10 +16,15 @@ import {
     Nav,
     NavbarBrand,
     NavbarToggler,
+    NavItem,
+    NavLink,
 } from 'reactstrap';
 
 export interface TopBarProps {
+    ghUserInfo: MiniPublicUserInfo | null;
     mountPath: string;
+    pathname: string;
+    search: string;
 }
 
 interface TopBarState {
@@ -40,6 +49,17 @@ export class TopBar extends React.Component<TopBarProps, TopBarState> {
     }
 
     render(): JSX.Element {
+        const { ghUserInfo, pathname, search, mountPath } = this.props;
+        const authLoginPath = authLoginRoute.toPath({ redirect: `${pathname}${search}` }, mountPath);
+        const authStatus = ghUserInfo ? [
+            <NavItem className='navbar-text py-2' key='authUser'>
+                <img src={ghUserInfo.avatar_url} className='align-middle rounded' style={{height: '1.5em'}} />
+                <span className='mx-1'>{ghUserInfo.login}</span>
+            </NavItem>,
+            <NavItem key='authLogout'><NavLink href='/auth/logout' className='py-2'>Logout</NavLink></NavItem>,
+        ] : [
+            <NavItem key='authLogin'><NavLink href={authLoginPath}>Login with GitHub</NavLink></NavItem>,
+        ];
         return <nav className='navbar navbar-expand-lg navbar-dark'
                 style={{backgroundColor: '#2d3e2f'}}>
             <Container>
@@ -47,6 +67,7 @@ export class TopBar extends React.Component<TopBarProps, TopBarState> {
                 <NavbarToggler right onClick={this._toggle} />
                 <Collapse isOpen={this.state.isOpen} navbar>
                     <Nav className='mr-auto' navbar />
+                    <Nav navbar>{authStatus}</Nav>
                 </Collapse>
             </Container>
         </nav>;

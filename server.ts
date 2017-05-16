@@ -27,6 +27,8 @@ interface Config {
     port: number;
     secure: boolean;
     sessionSecret: string;
+    githubClientId: string;
+    githubClientSecret: string;
 }
 
 /**
@@ -34,6 +36,8 @@ interface Config {
  */
 function extractConfigFromEnv(): Config {
     return {
+        githubClientId: extractEnvVar('GITHUB_CLIENT_ID'),
+        githubClientSecret: extractEnvVar('GITHUB_CLIENT_SECRET'),
         port: parseInt(extractEnvVar('PORT', '5000'), 10),
         proxy: !!extractEnvVar('PROXY', ''),
         secure: !!extractEnvVar('SECURE', ''),
@@ -60,6 +64,8 @@ async function main(req: Request, resp: Response, config: Config): Promise<void>
     }
 
     await WebUi.main(req, resp, {
+        githubClientId: config.githubClientId,
+        githubClientSecret: config.githubClientSecret,
         secure: config.secure,
         sessionSecret: config.sessionSecret,
     });
