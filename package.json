@@ -81,6 +81,7 @@
         "npm-run-all": "^4.0.2",
         "rimraf": "^2.6.1",
         "sinon": "^2.2.0",
+        "spinkit": "^1.2.5",
         "ts-loader": "^2.0.3",
         "tslint": "^5.2.0",
         "tslint-language-service": "^0.9.6",

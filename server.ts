@@ -6,6 +6,7 @@ import session from 'koa-session';
 import serve from 'koa-static';
 import path from 'path';
 import appConfig from './config';
+import { JobRunner } from './lib/job';
 import * as KoaLogger from './lib/koa-logger';
 import notFound from './lib/koa-notfound';
 import * as WebUi from './webui/server';
@@ -50,6 +51,8 @@ function extractConfigFromEnv(): Config {
 
 const config: Config = extractConfigFromEnv();
 
+const jobRunner = new JobRunner<any>();
+
 const app = new Koa();
 app.keys = config.KOA_KEYS;
 app.proxy = config.KOA_PROXY;
@@ -65,6 +68,7 @@ app.use(session(app));
 app.use(mount('/', WebUi.middleware({
     GITHUB_CLIENT_ID: config.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: config.GITHUB_CLIENT_SECRET,
+    jobRunner,
 })));
 
 const server = http.createServer(app.callback());
