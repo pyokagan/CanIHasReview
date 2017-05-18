@@ -9,8 +9,12 @@ import {
     setHeader,
 } from '@lib/http';
 import {
+    JobRunner,
+} from '@lib/job';
+import {
     authRoutes,
     homeRoute,
+    jobRoute,
 } from '@webui/routes';
 import createHttpError from 'http-errors';
 import {
@@ -19,6 +23,7 @@ import {
 } from './auth/server';
 import handleError from './error/server';
 import handleHome from './home/server';
+import handleJob from './job/server';
 import {
     getSession,
     Session,
@@ -30,6 +35,7 @@ type Options = {
     secure?: boolean;
     githubClientId: string;
     githubClientSecret: string;
+    jobRunner: JobRunner<any>;
 };
 
 /**
@@ -61,6 +67,13 @@ export async function main(req: Request, resp: Response, options: Options): Prom
                 req,
                 resp,
                 session,
+            });
+        } else if (jobRoute.testPath(req.pathname)) {
+            await handleJob({
+                auth,
+                jobRunner: options.jobRunner,
+                req,
+                resp,
             });
         } else {
             handled = false;

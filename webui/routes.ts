@@ -28,3 +28,10 @@ export interface AuthLogoutRouteParams extends AuthRouteParams {}
 export const authLogoutRoute: Route<AuthLogoutRouteParams> = baseAuthRoute.extend('logout');
 
 export const authRoutes = [authLoginRoute, authLoginCallbackRoute, authLogoutRoute];
+
+// == job ==
+
+export interface JobRouteParams {
+    name: string;
+}
+export const jobRoute = new Route<JobRouteParams>('/site/job/:name');
