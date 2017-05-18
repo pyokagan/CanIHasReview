@@ -4,9 +4,13 @@ import {
     Response,
     setHeader,
 } from '@lib/http';
+import {
+    JobRunner,
+} from '@lib/job';
 import handleAuthRoutes from '@webui/auth/server';
 import handleError from '@webui/error/server';
 import handleHome from '@webui/home/server';
+import handleJob from '@webui/job/server';
 import {
     setSession,
 } from '@webui/session';
@@ -26,6 +30,12 @@ const githubClientSecret = 'dummyGithubClientSecret';
 
 @suite('webui/server#main')
 export class MainTest {
+    private jobRunner: JobRunner<{}>;
+
+    before(): void {
+        this.jobRunner = new JobRunner<{}>();
+    }
+
     @test
     async 'routes to home'(): Promise<void> {
         const req = createRequest({
@@ -45,6 +55,7 @@ export class MainTest {
         await main(req, resp, {
             githubClientId,
             githubClientSecret,
+            jobRunner: this.jobRunner,
             sessionSecret,
         });
         assertResp(resp, expectedResp);
@@ -71,6 +82,36 @@ export class MainTest {
         await main(req, resp, {
             githubClientId,
             githubClientSecret,
+            jobRunner: this.jobRunner,
+            sessionSecret,
+        });
+        assertResp(resp, expectedResp);
+    }
+
+    @test
+    async 'routes to job'(): Promise<void> {
+        const jobName = this.jobRunner.run((name, stream) => Promise.resolve({}));
+        await Promise.resolve(); // let job complete first
+        const req = createRequest({
+            id: '',
+            method: 'GET',
+            url: `http://localhost/site/job/${encodeURIComponent(jobName)}`,
+        });
+        const expectedResp = new Response();
+        await handleJob({
+            auth: undefined,
+            jobRunner: this.jobRunner,
+            req,
+            resp: expectedResp,
+        });
+        setCacheHeader(expectedResp);
+        setSession(expectedResp, {}, { secret: sessionSecret });
+
+        const resp = new Response();
+        await main(req, resp, {
+            githubClientId,
+            githubClientSecret,
+            jobRunner: this.jobRunner,
             sessionSecret,
         });
         assertResp(resp, expectedResp);
@@ -96,6 +137,7 @@ export class MainTest {
         await main(req, resp, {
             githubClientId,
             githubClientSecret,
+            jobRunner: this.jobRunner,
             sessionSecret,
         });
         assertResp(resp, expectedResp);
