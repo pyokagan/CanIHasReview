@@ -8,6 +8,9 @@ import {
     Response,
     setHeader,
 } from '@lib/http';
+import {
+    JobRunner,
+} from '@lib/job';
 import createHttpError from 'http-errors';
 import {
     AuthContext,
@@ -16,6 +19,7 @@ import {
 } from './auth/server';
 import handleError from './error/server';
 import handleHome from './home/server';
+import handleJob from './job/server';
 import {
     getSession,
     Session,
@@ -27,6 +31,7 @@ type Options = {
     secure?: boolean;
     githubClientId: string;
     githubClientSecret: string;
+    jobRunner: JobRunner<any>;
 };
 
 /**
@@ -47,6 +52,7 @@ export async function main(req: Request, resp: Response, options: Options): Prom
             auth,
             githubClientId: options.githubClientId,
             githubClientSecret: options.githubClientSecret,
+            jobRunner: options.jobRunner,
             req,
             resp,
             session,
@@ -76,6 +82,7 @@ type RouteOptions = {
     auth: AuthContext | undefined;
     githubClientId: string;
     githubClientSecret: string;
+    jobRunner: JobRunner<any>;
 };
 
 async function handleRoutes(opts: RouteOptions): Promise<boolean> {
@@ -96,6 +103,16 @@ async function handleRoutes(opts: RouteOptions): Promise<boolean> {
         req: opts.req,
         resp: opts.resp,
         session: opts.session,
+    });
+    if (handled) {
+        return true;
+    }
+
+    handled = await handleJob({
+        auth: opts.auth,
+        jobRunner: opts.jobRunner,
+        req: opts.req,
+        resp: opts.resp,
     });
     if (handled) {
         return true;

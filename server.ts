@@ -12,6 +12,9 @@ import {
     wrapServerCallback,
 } from '@lib/http';
 import {
+    JobRunner,
+} from '@lib/job';
+import {
     resolveFsPath,
 } from '@lib/url-path';
 import * as WebUi from '@webui/server';
@@ -48,7 +51,7 @@ function extractConfigFromEnv(): Config {
 /**
  * Main request entry point.
  */
-async function main(req: Request, resp: Response, config: Config): Promise<void> {
+async function main(req: Request, resp: Response, config: Config, jobRunner: JobRunner<any>): Promise<void> {
     if (config.secure && req.protocol !== 'https') {
         throw createHttpError(HttpStatus.NOT_IMPLEMENTED,
                 'This website must be accessed over https', {
@@ -66,6 +69,7 @@ async function main(req: Request, resp: Response, config: Config): Promise<void>
     await WebUi.main(req, resp, {
         githubClientId: config.githubClientId,
         githubClientSecret: config.githubClientSecret,
+        jobRunner,
         secure: config.secure,
         sessionSecret: config.sessionSecret,
     });
@@ -85,7 +89,8 @@ async function handleStatic(req: Request, resp: Response): Promise<void> {
 }
 
 const config: Config = extractConfigFromEnv();
-const server = http.createServer(wrapServerCallback((req, resp) => main(req, resp, config), {
+const jobRunner = new JobRunner<any>();
+const server = http.createServer(wrapServerCallback((req, resp) => main(req, resp, config, jobRunner), {
     proxy: config.proxy,
 }));
 server.listen(config.port, 'localhost');
