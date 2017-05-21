@@ -32,6 +32,7 @@ interface Config {
     sessionSecret: string;
     githubClientId: string;
     githubClientSecret: string;
+    githubToken: string;
 }
 
 /**
@@ -41,6 +42,7 @@ function extractConfigFromEnv(): Config {
     return {
         githubClientId: extractEnvVar('GITHUB_CLIENT_ID'),
         githubClientSecret: extractEnvVar('GITHUB_CLIENT_SECRET'),
+        githubToken: extractEnvVar('GITHUB_TOKEN'),
         port: parseInt(extractEnvVar('PORT', '5000'), 10),
         proxy: !!extractEnvVar('PROXY', ''),
         secure: !!extractEnvVar('SECURE', ''),
@@ -69,6 +71,7 @@ async function main(req: Request, resp: Response, config: Config, jobRunner: Job
     await WebUi.main(req, resp, {
         githubClientId: config.githubClientId,
         githubClientSecret: config.githubClientSecret,
+        githubToken: config.githubToken,
         jobRunner,
         secure: config.secure,
         sessionSecret: config.sessionSecret,

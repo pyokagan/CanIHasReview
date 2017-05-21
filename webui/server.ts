@@ -20,6 +20,7 @@ import {
 import handleError from './error/server';
 import handleHome from './home/server';
 import handleJob from './job/server';
+import handlePull from './pull/server';
 import {
     getSession,
     Session,
@@ -31,6 +32,7 @@ type Options = {
     secure?: boolean;
     githubClientId: string;
     githubClientSecret: string;
+    githubToken: string;
     jobRunner: JobRunner<any>;
 };
 
@@ -52,6 +54,7 @@ export async function main(req: Request, resp: Response, options: Options): Prom
             auth,
             githubClientId: options.githubClientId,
             githubClientSecret: options.githubClientSecret,
+            githubToken: options.githubToken,
             jobRunner: options.jobRunner,
             req,
             resp,
@@ -82,6 +85,7 @@ type RouteOptions = {
     auth: AuthContext | undefined;
     githubClientId: string;
     githubClientSecret: string;
+    githubToken: string;
     jobRunner: JobRunner<any>;
 };
 
@@ -110,6 +114,17 @@ async function handleRoutes(opts: RouteOptions): Promise<boolean> {
 
     handled = await handleJob({
         auth: opts.auth,
+        jobRunner: opts.jobRunner,
+        req: opts.req,
+        resp: opts.resp,
+    });
+    if (handled) {
+        return true;
+    }
+
+    handled = await handlePull({
+        auth: opts.auth,
+        githubToken: opts.githubToken,
         jobRunner: opts.jobRunner,
         req: opts.req,
         resp: opts.resp,
