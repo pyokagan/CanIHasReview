@@ -20,6 +20,7 @@ interface Config {
     PORT: number;
     GITHUB_CLIENT_ID: string;
     GITHUB_CLIENT_SECRET: string;
+    GITHUB_TOKEN: string;
 }
 
 /**
@@ -43,6 +44,7 @@ function extractConfigFromEnv(): Config {
     return {
         GITHUB_CLIENT_ID: extractEnvVar('GITHUB_CLIENT_ID'),
         GITHUB_CLIENT_SECRET: extractEnvVar('GITHUB_CLIENT_SECRET'),
+        GITHUB_TOKEN: extractEnvVar('GITHUB_TOKEN'),
         KOA_KEYS: extractEnvVar('KOA_KEYS').split(/s+/),
         KOA_PROXY: !!extractEnvVar('KOA_PROXY', ''),
         PORT: parseInt(extractEnvVar('PORT', '5000'), 10),
@@ -68,6 +70,7 @@ app.use(session(app));
 app.use(mount('/', WebUi.middleware({
     GITHUB_CLIENT_ID: config.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: config.GITHUB_CLIENT_SECRET,
+    githubToken: config.GITHUB_TOKEN,
     jobRunner,
 })));
 

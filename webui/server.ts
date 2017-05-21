@@ -10,6 +10,7 @@ import * as Auth from './auth/server';
 import * as ErrorPage from './error/server';
 import * as Home from './home/server';
 import * as JobPage from './job/server';
+import * as Pull from './pull/server';
 import { RenderCtx } from './RenderCtx';
 import * as RenderServer from './renderServer';
 
@@ -17,6 +18,7 @@ interface Options {
     GITHUB_CLIENT_ID: string;
     GITHUB_CLIENT_SECRET: string;
     jobRunner: JobRunner<any>;
+    githubToken: string;
 }
 
 type Middleware = (ctx: Koa.Context, next?: () => Promise<void>) => Promise<void>;
@@ -31,6 +33,10 @@ export function middleware(opts: Options): Middleware {
         }),
         Home.middleware,
         JobPage.createMiddleware({
+            jobRunner: opts.jobRunner,
+        }),
+        Pull.createMiddleware({
+            githubToken: opts.githubToken,
             jobRunner: opts.jobRunner,
         }),
         notFound(),
