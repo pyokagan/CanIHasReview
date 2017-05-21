@@ -1,0 +1,14 @@
+/**
+ * Additional template CSS.
+ */
+
+.repohead {
+    background: linear-gradient( 95deg, rgb(250, 250, 250), rgb(240, 240, 240) );
+    color: rgb(95, 95, 95);
+    border-bottom: 1px rgb(200, 200, 200) solid;
+}
+
+.repohead h1 {
+    font-weight: 500;
+    font-size: 1.4rem;
+}

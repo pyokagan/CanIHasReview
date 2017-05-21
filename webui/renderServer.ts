@@ -26,6 +26,7 @@ export interface ReactConfig {
 const externalStylesheets: string[] = [
     require('!file-loader!bootstrap/dist/css/bootstrap.min.css'),
     require('!file-loader!spinkit/css/spinkit.css'),
+    require('!file-loader!./template.css'),
 ];
 
 /**
