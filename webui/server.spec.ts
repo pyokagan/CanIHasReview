@@ -27,6 +27,7 @@ import {
 const sessionSecret = 'abc123';
 const githubClientId = 'dummyGithubClientId';
 const githubClientSecret = 'dummyGithubClientSecret';
+const githubToken = 'dummyGithubToken';
 
 @suite('webui/server#main')
 export class MainTest {
@@ -55,6 +56,7 @@ export class MainTest {
         await main(req, resp, {
             githubClientId,
             githubClientSecret,
+            githubToken,
             jobRunner: this.jobRunner,
             sessionSecret,
         });
@@ -82,6 +84,7 @@ export class MainTest {
         await main(req, resp, {
             githubClientId,
             githubClientSecret,
+            githubToken,
             jobRunner: this.jobRunner,
             sessionSecret,
         });
@@ -111,6 +114,7 @@ export class MainTest {
         await main(req, resp, {
             githubClientId,
             githubClientSecret,
+            githubToken,
             jobRunner: this.jobRunner,
             sessionSecret,
         });
@@ -137,6 +141,7 @@ export class MainTest {
         await main(req, resp, {
             githubClientId,
             githubClientSecret,
+            githubToken,
             jobRunner: this.jobRunner,
             sessionSecret,
         });

@@ -15,6 +15,7 @@ import {
     authRoutes,
     homeRoute,
     jobRoute,
+    pullRoute,
 } from '@webui/routes';
 import createHttpError from 'http-errors';
 import {
@@ -24,6 +25,7 @@ import {
 import handleError from './error/server';
 import handleHome from './home/server';
 import handleJob from './job/server';
+import handlePull from './pull/server';
 import {
     getSession,
     Session,
@@ -35,6 +37,7 @@ type Options = {
     secure?: boolean;
     githubClientId: string;
     githubClientSecret: string;
+    githubToken: string;
     jobRunner: JobRunner<any>;
 };
 
@@ -71,6 +74,14 @@ export async function main(req: Request, resp: Response, options: Options): Prom
         } else if (jobRoute.testPath(req.pathname)) {
             await handleJob({
                 auth,
+                jobRunner: options.jobRunner,
+                req,
+                resp,
+            });
+        } else if (pullRoute.testPath(req.pathname)) {
+            await handlePull({
+                auth,
+                githubToken: options.githubToken,
                 jobRunner: options.jobRunner,
                 req,
                 resp,
