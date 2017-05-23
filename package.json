@@ -48,6 +48,7 @@
         "reactstrap": "^4.5.0",
         "simple-oauth2": "^1.2.0",
         "source-map-support": "^0.4.15",
+        "tmp": "0.0.31",
         "url-parse": "^1.1.9",
         "uuid": "^3.0.1"
     },
@@ -68,6 +69,7 @@
         "@types/reactstrap": "^4.3.2",
         "@types/simple-oauth2": "^1.0.2",
         "@types/sinon": "^2.2.1",
+        "@types/tmp": "0.0.33",
         "@types/uuid": "^2.0.29",
         "compression-webpack-plugin": "^0.4.0",
         "file-loader": "^0.11.1",
