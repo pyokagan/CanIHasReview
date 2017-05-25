@@ -5,6 +5,7 @@ import mount from 'koa-mount';
 import serve from 'koa-static';
 import path from 'path';
 import appConfig from './config';
+import * as KoaLogger from './lib/koa-logger';
 import notFound from './lib/koa-notfound';
 
 /**
@@ -47,6 +48,7 @@ const app = new Koa();
 app.keys = config.KOA_KEYS;
 app.proxy = config.KOA_PROXY;
 
+app.use(KoaLogger.createMiddleware({}));
 app.use(mount(appConfig.publicPath, compose([
     serve(path.resolve(__webpack_dirname, appConfig.publicOutputDir), {
         maxage: 365 * 24 * 60 * 60,
