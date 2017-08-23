@@ -1,4 +1,6 @@
 CanIHasReview
 =============
 
+image:https://travis-ci.org/CanIHasReview/CanIHasReview.svg?branch=master["Build Status", link="https://travis-ci.org/CanIHasReview/CanIHasReview"]
+
 GitHub Pull Request versioning utility.
