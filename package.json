@@ -35,14 +35,19 @@
         "sourceMap": false
     },
     "dependencies": {
+        "http-errors": "^1.6.2",
         "lodash": "^4.17.4",
+        "mime": "^2.0.3",
         "mz": "^2.6.0",
+        "path-to-regexp": "^2.1.0",
         "querystringify": "^1.0.0",
         "source-map-support": "^0.4.18",
         "url-parse": "^1.1.9"
     },
     "devDependencies": {
+        "@types/http-errors": "^1.6.1",
         "@types/lodash": "^4.14.88",
+        "@types/mime": "^2.0.0",
         "@types/mocha": "^2.2.41",
         "@types/mz": "0.0.32",
         "@types/node": "^7.0.18",
