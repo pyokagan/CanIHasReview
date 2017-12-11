@@ -1,9 +1,13 @@
 import {
+    Console,
+} from 'console';
+import {
     ServerRequest as NodeRequest,
 } from 'http';
 import createHttpError from 'http-errors';
 import qs from 'querystringify';
 import urlParse from 'url-parse';
+import uuid from 'uuid';
 import {
     HttpMethod,
     isHttpMethod,
@@ -15,10 +19,27 @@ import {
     HttpStatus,
 } from './status';
 
+export interface RequestConsole {
+    log(message: string): void;
+    info(message: string): void;
+    warn(message: string): void;
+    error(message: string): void;
+}
+
 /**
  * Represents a HTTP Request.
  */
 export interface Request {
+    /**
+     * Request Id.
+     */
+    id: string;
+
+    /**
+     * Request console.
+     */
+    console: RequestConsole;
+
     /**
      * Mountpath.
      */
@@ -67,12 +88,23 @@ export interface Request {
 type RequestOptions = {
     method: HttpMethod;
     url: string;
+
+    /**
+     * Request Id. Default: Random ID.
+     */
+    id: string;
+
+    /**
+     * Console to use for logging.
+     */
+    console?: RequestConsole;
 };
 
 /**
  * Create a synthetic request.
  */
 export function createRequest(options: RequestOptions): Request {
+    const console = options.console || createDummyRequestConsole();
     const parsedUrl = urlParse(options.url, false);
 
     const protocol = handleUrlParseProtocol(parsedUrl.protocol);
@@ -84,8 +116,10 @@ export function createRequest(options: RequestOptions): Request {
     }
 
     return {
+        console,
         headers: {},
         host: parsedUrl.host,
+        id: options.id,
         method: options.method,
         mountPath: '',
         pathname: parsedUrl.pathname,
@@ -108,6 +142,8 @@ function handleUrlParseProtocol(protocol: string): HttpProtocol {
 
 type NodeRequestOptions = {
     proxy?: boolean;
+    id?: string;
+    console?: RequestConsole;
 };
 
 /**
@@ -119,6 +155,8 @@ export function nodeRequestToRequest(nodeReq: NodeRequest, options?: NodeRequest
         options = {};
     }
     const proxy = options.proxy || false;
+    const id = options.id || uuid.v1();
+    const console = options.console || createRequestConsole(process.stderr);
 
     const method = nodeReq.method;
     if (!isHttpMethod(method)) {
@@ -146,8 +184,10 @@ export function nodeRequestToRequest(nodeReq: NodeRequest, options?: NodeRequest
     }
 
     return {
+        console,
         headers: nodeReq.headers,
         host: nodeRequestToHost(nodeReq, proxy),
+        id,
         method,
         mountPath: '',
         pathname,
@@ -193,4 +233,24 @@ function parseHttpUrl(url: string): { pathname: string, search: string } | undef
         pathname,
         search,
     };
+}
+
+/**
+ * Create a request console which does nothing.
+ */
+export function createDummyRequestConsole(): RequestConsole {
+    const dummy = () => {};
+    return {
+        error: dummy,
+        info: dummy,
+        log: dummy,
+        warn: dummy,
+    };
+}
+
+/**
+ * Create a request console which writes to a stream.
+ */
+export function createRequestConsole(stream: NodeJS.WritableStream): RequestConsole {
+    return new Console(stream);
 }
