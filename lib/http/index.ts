@@ -12,7 +12,10 @@ export {
 } from './status';
 export {
     Request,
+    RequestConsole,
+    createDummyRequestConsole,
     createRequest,
+    createRequestConsole,
     nodeRequestToRequest,
 } from './request';
 export {
