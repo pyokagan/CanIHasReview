@@ -25,6 +25,8 @@ import path from 'path';
 interface Config {
     proxy: boolean;
     port: number;
+    secure: boolean;
+    sessionSecret: string;
 }
 
 /**
@@ -34,13 +36,15 @@ function extractConfigFromEnv(): Config {
     return {
         port: parseInt(extractEnvVar('PORT', '5000'), 10),
         proxy: !!extractEnvVar('PROXY', ''),
+        secure: !!extractEnvVar('SECURE', ''),
+        sessionSecret: extractEnvVar('SESSION_SECRET'),
     };
 }
 
 /**
  * Main request entry point.
  */
-async function main(req: Request, resp: Response): Promise<void> {
+async function main(req: Request, resp: Response, config: Config): Promise<void> {
     let handled = false;
 
     handled = await mount(req, '/static', () => handleStatic(req, resp));
@@ -48,7 +52,10 @@ async function main(req: Request, resp: Response): Promise<void> {
         return;
     }
 
-    await WebUi.main(req, resp);
+    await WebUi.main(req, resp, {
+        secure: config.secure,
+        sessionSecret: config.sessionSecret,
+    });
 }
 
 /**
@@ -65,7 +72,7 @@ async function handleStatic(req: Request, resp: Response): Promise<void> {
 }
 
 const config: Config = extractConfigFromEnv();
-const server = http.createServer(wrapServerCallback(main, {
+const server = http.createServer(wrapServerCallback((req, resp) => main(req, resp, config), {
     proxy: config.proxy,
 }));
 server.listen(config.port, 'localhost');
