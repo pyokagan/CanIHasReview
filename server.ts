@@ -45,6 +45,13 @@ function extractConfigFromEnv(): Config {
  * Main request entry point.
  */
 async function main(req: Request, resp: Response, config: Config): Promise<void> {
+    if (config.secure && req.protocol !== 'https') {
+        throw createHttpError(HttpStatus.NOT_IMPLEMENTED,
+                'This website must be accessed over https', {
+                    expose: true,
+                });
+    }
+
     let handled = false;
 
     handled = await mount(req, '/static', () => handleStatic(req, resp));
