@@ -3,3 +3,5 @@
 /canihasreview-*.tgz
 /dist/
 /.tmp/
+/.nyc_output/
+/coverage/

@@ -1,8 +1,25 @@
 'use strict';
+const path = require('path');
 const webpack = require('webpack');
 const webpackMerge = require('webpack-merge');
 const webpackNodeExternals = require('webpack-node-externals');
 const baseConfig = require('./webpack.base.config');
+const isCoverage = process.env.NODE_ENV === 'coverage';
+
+const rules = [];
+if (isCoverage) {
+    rules.push({
+        test: /\.(js|tsx?)$/,
+        include: [
+            path.resolve(__dirname, 'lib'),
+        ],
+        enforce: 'post',
+        use: {
+            loader: 'istanbul-instrumenter-loader',
+            options: { esModules: true },
+        },
+    });
+}
 
 module.exports = webpackMerge(baseConfig, {
     target: 'node',
@@ -20,4 +37,8 @@ module.exports = webpackMerge(baseConfig, {
         __dirname: true,
         __filename: true,
     },
+    module: {
+        rules,
+    },
+    devtool: 'inline-cheap-module-source-map',
 });
