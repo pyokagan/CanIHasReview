@@ -11,9 +11,14 @@ import {
 import {
     JobRunner,
 } from '@lib/job';
+import {
+    authRoutes,
+    homeRoute,
+    jobRoute,
+    pullRoute,
+} from '@webui/routes';
 import createHttpError from 'http-errors';
 import {
-    AuthContext,
     handleAuthRoutes,
     makeAuthContext,
 } from './auth/server';
@@ -50,16 +55,39 @@ export async function main(req: Request, resp: Response, options: Options): Prom
     const auth = await makeAuthContext(session);
 
     try {
-        const handled = await handleRoutes({
-            auth,
-            githubClientId: options.githubClientId,
-            githubClientSecret: options.githubClientSecret,
-            githubToken: options.githubToken,
-            jobRunner: options.jobRunner,
-            req,
-            resp,
-            session,
-        });
+        let handled = true;
+        if (homeRoute.testPath(req.pathname, req.search)) {
+            await handleHome({
+                auth,
+                req,
+                resp,
+            });
+        } else if (authRoutes.some(route => route.testPath(req.pathname, req.search))) {
+            await handleAuthRoutes({
+                githubClientId: options.githubClientId,
+                githubClientSecret: options.githubClientSecret,
+                req,
+                resp,
+                session,
+            });
+        } else if (jobRoute.testPath(req.pathname, req.search)) {
+            await handleJob({
+                auth,
+                jobRunner: options.jobRunner,
+                req,
+                resp,
+            });
+        } else if (pullRoute.testPath(req.pathname, req.search)) {
+            await handlePull({
+                auth,
+                githubToken: options.githubToken,
+                jobRunner: options.jobRunner,
+                req,
+                resp,
+            });
+        } else {
+            handled = false;
+        }
 
         setSession(resp, session, {
             secret: options.sessionSecret,
@@ -76,64 +104,6 @@ export async function main(req: Request, resp: Response, options: Options): Prom
             resp,
         });
     }
-}
-
-type RouteOptions = {
-    req: Request;
-    resp: Response;
-    session: Session;
-    auth: AuthContext | undefined;
-    githubClientId: string;
-    githubClientSecret: string;
-    githubToken: string;
-    jobRunner: JobRunner<any>;
-};
-
-async function handleRoutes(opts: RouteOptions): Promise<boolean> {
-    let handled = false;
-
-    handled = await handleHome({
-        auth: opts.auth,
-        req: opts.req,
-        resp: opts.resp,
-    });
-    if (handled) {
-        return true;
-    }
-
-    handled = await handleAuthRoutes({
-        githubClientId: opts.githubClientId,
-        githubClientSecret: opts.githubClientSecret,
-        req: opts.req,
-        resp: opts.resp,
-        session: opts.session,
-    });
-    if (handled) {
-        return true;
-    }
-
-    handled = await handleJob({
-        auth: opts.auth,
-        jobRunner: opts.jobRunner,
-        req: opts.req,
-        resp: opts.resp,
-    });
-    if (handled) {
-        return true;
-    }
-
-    handled = await handlePull({
-        auth: opts.auth,
-        githubToken: opts.githubToken,
-        jobRunner: opts.jobRunner,
-        req: opts.req,
-        resp: opts.resp,
-    });
-    if (handled) {
-        return true;
-    }
-
-    return false;
 }
 
 export default main;

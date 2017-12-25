@@ -16,13 +16,13 @@ import {
     AuthContext,
 } from '@webui/auth/server';
 import renderServer from '@webui/renderServer';
+import {
+    jobRoute,
+} from '@webui/routes';
 import createHttpError from 'http-errors';
 import {
     isObjectLike,
 } from 'lodash';
-import {
-    jobRoute,
-} from '../routes';
 import JobPage from './entry';
 
 interface Options {
@@ -32,21 +32,22 @@ interface Options {
     auth: AuthContext | undefined;
 }
 
-/**
- * Returns true if the request was handled, false otherwise.
- */
-export async function handleJob(opts: Options): Promise<boolean> {
+export async function handleJob(opts: Options): Promise<void> {
     const { req, resp } = opts;
 
-    const routeProps = jobRoute.match(req, 'GET');
-    if (!routeProps) {
-        return false;
+    const routeParams = jobRoute.matchPath(req.pathname, req.search);
+    if (!routeParams) {
+        throw new Error(`bad request path: ${req.pathname}${req.search}`);
+    }
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        throw createHttpError(HttpStatus.METHOD_NOT_ALLOWED);
     }
 
     const jobStatus: JobStatus<any> | undefined =
-        routeProps.name === 'test' ? ['running', undefined] : opts.jobRunner.getStatus(routeProps.name);
+        routeParams.name === 'test' ? ['running', undefined] : opts.jobRunner.getStatus(routeParams.name);
     if (!jobStatus) {
-        throw createHttpError(HttpStatus.NOT_FOUND, `No such job: ${routeProps.name}`);
+        throw createHttpError(HttpStatus.NOT_FOUND, `No such job: ${routeParams.name}`);
     }
 
     const [ jobState, jobValue ] = jobStatus;
@@ -62,15 +63,13 @@ export async function handleJob(opts: Options): Promise<boolean> {
         renderServer(resp, __dirname, 'CanIHasReview', JobPage, {
             ghUserInfo: opts.auth ? opts.auth.ghUserInfo : null,
             jobMessage,
-            jobName: routeProps.name,
+            jobName: routeParams.name,
             jobState,
             mountPath: req.mountPath,
             pathname: req.pathname,
             search: req.search,
         });
     }
-
-    return true;
 }
 
 export default handleJob;

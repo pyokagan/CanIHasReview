@@ -11,6 +11,9 @@ import {
 import {
     homeRoute,
 } from '@webui/routes';
+import {
+    authLoginCallbackRoute,
+} from '@webui/routes';
 import Session from '@webui/session';
 import createHttpError from 'http-errors';
 import {
@@ -21,9 +24,6 @@ import url from 'url';
 import {
     getLoginCallbackUrl,
 } from '../paths';
-import {
-    loginCallbackRoute,
-} from '../routes';
 
 type Options = {
     req: Request,
@@ -32,41 +32,40 @@ type Options = {
     session: Session,
 };
 
-/**
- * @returns true if the request was handled, false otherwise.
- */
-export async function handleLoginCallback(opts: Options): Promise<boolean> {
+export async function handleLoginCallback(opts: Options): Promise<void> {
     const { req, resp, oauth2, session } = opts;
 
-    if (!loginCallbackRoute.match(req, 'GET')) {
-        return false;
+    const routeParams = authLoginCallbackRoute.matchPath(req.pathname, req.search);
+    if (!routeParams) {
+        throw new Error(`bad request path: ${req.pathname}${req.search}`);
     }
 
-    const code = req.query.get('code');
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        throw createHttpError(HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    const code = routeParams.code;
     if (!code) {
-        throw createHttpError(HttpStatus.BAD_REQUEST, 'code not provided', { expose: true });
+        throw createHttpError(HttpStatus.BAD_REQUEST, 'code not provided');
     }
 
-    const redirect = req.query.get('redirect');
     const token = await oauth2.authorizationCode.getToken({
         code,
         redirect_uri: getLoginCallbackUrl({
             host: req.host,
             mountPath: req.mountPath,
             protocol: req.protocol,
-            redirect,
+            redirect: routeParams.redirect,
         }),
     });
     if (!token.access_token) {
         throw createHttpError(HttpStatus.BAD_REQUEST, token.error_description || 'Unknown Error');
     }
     session.ghToken = token.access_token;
-    redirectSeeOther(resp, getFinalRedirect(req.mountPath, redirect));
-
-    return true;
+    redirectSeeOther(resp, getFinalRedirect(req.mountPath, routeParams.redirect));
 }
 
-function getFinalRedirect(mountPath: string, redirect?: string): string {
+function getFinalRedirect(mountPath: string, redirect: string | undefined): string {
     if (!redirect) {
         return homeRoute.toPath({}, mountPath);
     }

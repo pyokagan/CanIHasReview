@@ -2,6 +2,7 @@
  * @module
  */
 import {
+    HttpStatus,
     Request,
     Response,
 } from '@lib/http';
@@ -12,6 +13,10 @@ import {
     AuthContext,
     redirectToLogin,
 } from '@webui/auth/server';
+import {
+    pullRoute,
+} from '@webui/routes';
+import createHttpError from 'http-errors';
 import * as Get from './get/server';
 import * as Post from './post/server';
 
@@ -23,39 +28,39 @@ interface Options {
     auth: AuthContext | undefined;
 }
 
-/**
- * @returns true if the request was handled, false otherwise.
- */
-export async function handlePull(opts: Options): Promise<boolean> {
-    const { resp, req } = opts;
-    let handled = false;
+export async function handlePull(opts: Options): Promise<void> {
+    const { resp, req, auth } = opts;
 
-    if (!opts.auth) {
+    if (!pullRoute.testPath(req.pathname, req.search)) {
+        throw new Error(`bad request path: ${req.pathname}${req.search}`);
+    }
+
+    if (!auth) {
         redirectToLogin(resp, req);
-        return true;
+        return;
     }
 
-    handled = await Get.handlePullGet({
-        auth: opts.auth,
-        req,
-        resp,
-    });
-    if (handled) {
-        return true;
+    switch (req.method) {
+    case 'GET':
+    case 'HEAD':
+        await Get.handlePullGet({
+            auth,
+            req,
+            resp,
+        });
+        break;
+    case 'POST':
+        await Post.handlePullPost({
+            auth,
+            githubToken: opts.githubToken,
+            jobRunner: opts.jobRunner,
+            req,
+            resp,
+        });
+        break;
+    default:
+        throw createHttpError(HttpStatus.METHOD_NOT_ALLOWED);
     }
-
-    handled = await Post.handlePullPost({
-        auth: opts.auth,
-        githubToken: opts.githubToken,
-        jobRunner: opts.jobRunner,
-        req,
-        resp,
-    });
-    if (handled) {
-        return true;
-    }
-
-    return false;
 }
 
 export default handlePull;

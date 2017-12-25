@@ -10,19 +10,23 @@ import {
     ServerError as GithubServerError,
 } from '@lib/github';
 import {
+    HttpStatus,
     redirectSeeOther,
     Request,
     Response,
 } from '@lib/http';
+import {
+    authLoginCallbackRoute,
+    authLoginRoute,
+    authLogoutRoute,
+} from '@webui/routes';
 import Session from '@webui/session';
 import fetchPonyfill from 'fetch-ponyfill';
+import createHttpError from 'http-errors';
 import simpleOauth2 from 'simple-oauth2';
 import handleLogin from './login/server';
 import handleLoginCallback from './loginCallback/server';
 import handleLogout from './logout/server';
-import {
-    getLoginPath,
-} from './paths';
 
 const { fetch } = fetchPonyfill();
 
@@ -44,10 +48,9 @@ type Options = {
     githubClientSecret: string;
 };
 
-/**
- * @returns true if the request was handled, false otherwise.
- */
-export async function handleAuthRoutes(opts: Options): Promise<boolean> {
+export async function handleAuthRoutes(opts: Options): Promise<void> {
+    const { req } = opts;
+
     const oauth2 = simpleOauth2.create({
         auth: {
             authorizePath: '/login/oauth/authorize',
@@ -59,38 +62,30 @@ export async function handleAuthRoutes(opts: Options): Promise<boolean> {
             secret: opts.githubClientSecret,
         },
     });
-    let handled = false;
 
-    handled = await handleLogin({
-        oauth2,
-        req: opts.req,
-        resp: opts.resp,
-        scope: '',
-    });
-    if (handled) {
-        return true;
+    if (authLoginRoute.testPath(req.pathname, req.search)) {
+        await handleLogin({
+            oauth2,
+            req: opts.req,
+            resp: opts.resp,
+            scope: '',
+        });
+    } else if (authLoginCallbackRoute.testPath(req.pathname, req.search)) {
+        await handleLoginCallback({
+            oauth2,
+            req: opts.req,
+            resp: opts.resp,
+            session: opts.session,
+        });
+    } else if (authLogoutRoute.testPath(req.pathname, req.search)) {
+        await handleLogout({
+            req: opts.req,
+            resp: opts.resp,
+            session: opts.session,
+        });
+    } else {
+        throw createHttpError(HttpStatus.NOT_FOUND);
     }
-
-    handled = await handleLoginCallback({
-        oauth2,
-        req: opts.req,
-        resp: opts.resp,
-        session: opts.session,
-    });
-    if (handled) {
-        return true;
-    }
-
-    handled = await handleLogout({
-        req: opts.req,
-        resp: opts.resp,
-        session: opts.session,
-    });
-    if (handled) {
-        return true;
-    }
-
-    return false;
 }
 
 export async function makeAuthContext(session: Session): Promise<AuthContext | undefined> {
@@ -125,9 +120,7 @@ export async function makeAuthContext(session: Session): Promise<AuthContext | u
 }
 
 export function redirectToLogin(resp: Response, req: Request): void {
-    redirectSeeOther(resp, getLoginPath({
-        mountPath: req.mountPath,
-        pathname: req.pathname,
-        search: req.search,
-    }));
+    redirectSeeOther(resp, authLoginRoute.toPath({
+        redirect: `${req.pathname}${req.search}`,
+    }, req.mountPath));
 }

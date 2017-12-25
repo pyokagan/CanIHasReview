@@ -3,6 +3,7 @@
  * Home page.
  */
 import {
+    HttpStatus,
     Request,
     Response,
 } from '@lib/http';
@@ -12,7 +13,8 @@ import {
 import renderServer from '@webui/renderServer';
 import {
     homeRoute,
-} from '../routes';
+} from '@webui/routes';
+import createHttpError from 'http-errors';
 import Home from './entry';
 
 type Options = {
@@ -21,14 +23,16 @@ type Options = {
     auth?: AuthContext;
 };
 
-/**
- * @returns true if the request was handled, false otherwise.
- */
-export async function handleHome(opts: Options): Promise<boolean> {
+export async function handleHome(opts: Options): Promise<void> {
     const { req, resp } = opts;
 
-    if (!homeRoute.match(req, 'GET')) {
-        return false;
+    const routeParams = homeRoute.matchPath(req.pathname, req.search);
+    if (!routeParams) {
+        throw new Error(`bad request path: ${req.pathname}${req.search}`);
+    }
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        throw createHttpError(HttpStatus.METHOD_NOT_ALLOWED);
     }
 
     renderServer(resp, __dirname, 'CanIHasReview', Home, {
@@ -37,7 +41,6 @@ export async function handleHome(opts: Options): Promise<boolean> {
         pathname: req.pathname,
         search: req.search,
     });
-    return true;
 }
 
 export default handleHome;

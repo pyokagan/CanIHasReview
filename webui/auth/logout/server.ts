@@ -3,17 +3,17 @@
  * (Node-only) Auth -- Logout route handling
  */
 import {
+    HttpStatus,
     redirectSeeOther,
     Request,
     Response,
 } from '@lib/http';
 import {
+    authLogoutRoute,
     homeRoute,
 } from '@webui/routes';
 import Session from '@webui/session';
-import {
-    logoutRoute,
-} from '../routes';
+import createHttpError from 'http-errors';
 
 type Options = {
     req: Request;
@@ -24,17 +24,20 @@ type Options = {
 /**
  * @returns true if the request was handled, false otherwise.
  */
-export async function handleLogout(opts: Options): Promise<boolean> {
+export async function handleLogout(opts: Options): Promise<void> {
     const { req, session, resp } = opts;
 
-    if (!logoutRoute.match(req, 'GET')) {
-        return false;
+    const routeParams = authLogoutRoute.matchPath(req.pathname, req.search);
+    if (!routeParams) {
+        throw new Error(`bad request path: ${req.pathname}${req.search}`);
+    }
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        throw createHttpError(HttpStatus.METHOD_NOT_ALLOWED);
     }
 
     delete session.ghToken;
     redirectSeeOther(resp, homeRoute.toPath({}, req.mountPath));
-
-    return true;
 }
 
 export default handleLogout;

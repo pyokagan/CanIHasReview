@@ -37,19 +37,20 @@ type Options = {
     githubToken: string;
 };
 
-/**
- * @returns true if the request was handled, false otherwise.
- */
-export async function handlePullPost(opts: Options): Promise<boolean> {
+export async function handlePullPost(opts: Options): Promise<void> {
     const { req, resp, auth } = opts;
 
-    const routeProps = pullRoute.match(req, 'POST');
-    if (!routeProps) {
-        return false;
+    const routeParams = pullRoute.matchPath(req.pathname, req.search);
+    if (!routeParams) {
+        throw new Error(`bad request path: ${req.pathname}${req.search}`);
+    }
+
+    if (req.method !== 'POST') {
+        throw new Error(`bad request method: ${req.method}`);
     }
 
     const ghUserApi = github.adaptFetchCache(auth.ghUserApi);
-    const prInfo = await github.getPrInfo(ghUserApi, routeProps.owner, routeProps.repo, routeProps.pr);
+    const prInfo = await github.getPrInfo(ghUserApi, routeParams.owner, routeParams.repo, routeParams.pr);
 
     if (!(prInfo.base.repo.full_name in repoConfigs)) {
         throw createHttpError(HttpStatus.NOT_FOUND, 'Unsupported repo');
@@ -76,7 +77,6 @@ export async function handlePullPost(opts: Options): Promise<boolean> {
 
     // Redirect users to the newly-created job.
     redirectSeeOther(resp, jobRoute.toPath({ name: jobName }, req.mountPath));
-    return true;
 }
 
 export default handlePullPost;
