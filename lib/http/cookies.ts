@@ -117,7 +117,7 @@ type CookieOptions = {
     expires?: Date;
     domain?: string;
     httpOnly?: boolean;
-    sameSite?: boolean;
+    sameSite?: 'strict' | 'lax';
     secure?: boolean;
 
     /**
@@ -150,7 +150,7 @@ export function stringify(name: string, value: string, options?: CookieOptions):
         header += `; domain=${options.domain}`;
     }
     if (options.sameSite) {
-        header += '; samesite=strict';
+        header += `; samesite=${options.sameSite}`;
     }
     if (options.secure) {
         header += '; secure';

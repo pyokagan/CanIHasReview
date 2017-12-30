@@ -63,7 +63,7 @@ export function setSession(resp: Response, sess: Session, options: SetSessionOpt
         httpOnly: true,
         maxAge: 30 * 60 * 1000,
         path: '/',
-        sameSite: true,
+        sameSite: 'lax',
         secure: options.secure || false,
     });
 }
