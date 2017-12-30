@@ -14,9 +14,9 @@ import path from 'path';
  * A temporary git repo meant for testing.
  */
 export class TmpGitRepo {
-    tmpDir: tmp.TmpDir;
-    currentTime: number;
-    shell: Shell;
+    readonly tmpDir: tmp.TmpDir;
+    private currentTime: number; // seconds
+    private shell: Shell;
 
     constructor(tmpDir: tmp.TmpDir) {
         this.tmpDir = tmpDir;

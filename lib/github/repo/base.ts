@@ -28,11 +28,9 @@ export interface RepoInfo {
     fork: boolean;
     created_at: string;
     updated_at: string;
-    pushed_at: string;
     git_url: string;
     ssh_url: string;
     clone_url: string;
-    svn_url: string;
     homepage: string | null;
     size: number;
     stargazers_count: number;
@@ -68,11 +66,9 @@ export function isRepoInfo(value: any): value is RepoInfo {
         typeof obj.fork === 'boolean' &&
         typeof obj.created_at === 'string' &&
         typeof obj.updated_at === 'string' &&
-        typeof obj.pushed_at === 'string' &&
         typeof obj.git_url === 'string' &&
         typeof obj.ssh_url === 'string' &&
         typeof obj.clone_url === 'string' &&
-        typeof obj.svn_url === 'string' &&
         (typeof obj.homepage === 'string' || obj.homepage === null) &&
         typeof obj.size === 'number' &&
         typeof obj.stargazers_count === 'number' &&
