@@ -8,8 +8,9 @@
  * @throws {Error} Environment variable not defined and defaultValue not provided.
  */
 export function extractEnvVar(key: string, defaultValue?: string): string {
-    if (process.env[key]) {
-        return process.env[key];
+    const value = process.env[key];
+    if (typeof value === 'string') {
+        return value;
     } else if (typeof defaultValue !== 'undefined') {
         return defaultValue;
     } else {

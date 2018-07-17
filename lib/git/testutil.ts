@@ -64,7 +64,7 @@ export class TmpGitRepo {
                 LANG: 'C',
                 LC_ALL: 'C',
                 PAGER: 'cat',
-                PATH: process.env.PATH,
+                PATH: process.env.PATH || '',
                 TZ: 'UTC',
             },
         });

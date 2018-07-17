@@ -24,6 +24,7 @@
         "pretty": true,
         "sourceMap": true,
         "strict": true,
+        "strictPropertyInitialization": false,
         "target": "ES6"
     }
 }
