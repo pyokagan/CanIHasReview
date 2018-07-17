@@ -14,7 +14,7 @@ import {
 } from '@lib/job';
 import * as prstore from '@lib/prstore';
 import {
-    Shell,
+    SimpleShell,
 } from '@lib/shell';
 import * as tmp from '@lib/tmp';
 import {
@@ -105,7 +105,7 @@ export function makeNewVersionJob(opts: JobOptions): Job<void> {
         const tmpDir = await tmp.dir({
             unsafeCleanup: true,
         });
-        const shell = new Shell({
+        const shell = new SimpleShell({
             console,
             cwd: tmpDir.path,
             stderr: outStream,

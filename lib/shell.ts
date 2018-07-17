@@ -122,7 +122,13 @@ export function checkOutput(command: string, args: string[], options: ShellOptio
     });
 }
 
-export class Shell {
+export interface Shell {
+    call(command: string, args: string[], options?: ShellOptions): Promise<number>;
+    checkCall(command: string, args: string[], options?: ShellOptions): Promise<void>;
+    checkOutput(command: string, args: string[], options?: ShellOptions): Promise<string>;
+}
+
+export class SimpleShell {
     private options: ShellOptions;
 
     constructor(options?: ShellOptions) {
