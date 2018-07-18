@@ -1,8 +1,13 @@
 export {
-    Fetch,
     baseUrl,
     createApi,
 } from './api';
+export {
+    Fetch,
+    Headers,
+    RequestInit,
+    Response,
+} from './fetch';
 export {
     GithubError,
     JsonValidationError,
