@@ -20,9 +20,6 @@ import * as tmp from '@lib/tmp';
 import {
     Console,
 } from 'console';
-import fetchPonyfill from 'fetch-ponyfill';
-
-const { fetch } = fetchPonyfill();
 
 export function escapeMarkdown(str: string): string {
     // via https://enterprise.github.com/downloads/en/markdown-cheatsheet.pdf
@@ -87,6 +84,7 @@ export function formatComment(prInfo: github.PrInfo, prCommits: prstore.Commit[]
 }
 
 interface JobOptions {
+    fetch: github.Fetch;
     githubToken: string;
     prInfo: github.PrInfo;
     repoConfig: RepoConfig;
@@ -139,7 +137,7 @@ export function makeNewVersionJob(opts: JobOptions): Job<void> {
 
         // Post comment
         const ghBotApi = github.createApi({
-            fetch,
+            fetch: opts.fetch,
             token: opts.githubToken,
             userAgent: 'CanIHasReview',
         });

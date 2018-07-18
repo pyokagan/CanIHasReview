@@ -21,13 +21,10 @@ import {
     authLogoutRoute,
 } from '@webui/routes';
 import Session from '@webui/session';
-import fetchPonyfill from 'fetch-ponyfill';
 import createHttpError from 'http-errors';
 import handleLogin from './login/server';
 import handleLoginCallback from './loginCallback/server';
 import handleLogout from './logout/server';
-
-const { fetch } = fetchPonyfill();
 
 /**
  * User Agent to be reported to GitHub.
@@ -40,6 +37,7 @@ export interface AuthContext {
 }
 
 type Options = {
+    fetch: Fetch;
     req: Request;
     resp: Response;
     session: Session;
@@ -58,6 +56,7 @@ export async function handleAuthRoutes(opts: Options): Promise<void> {
         });
     } else if (authLoginCallbackRoute.testPath(req.pathname)) {
         await handleLoginCallback({
+            fetch: opts.fetch,
             githubClientId: opts.githubClientId,
             githubClientSecret: opts.githubClientSecret,
             req: opts.req,
@@ -75,7 +74,7 @@ export async function handleAuthRoutes(opts: Options): Promise<void> {
     }
 }
 
-export async function makeAuthContext(session: Session): Promise<AuthContext | undefined> {
+export async function makeAuthContext(session: Session, fetch: Fetch): Promise<AuthContext | undefined> {
     const ghToken = session.ghToken;
     if (!ghToken) {
         return;

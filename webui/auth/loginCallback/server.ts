@@ -4,6 +4,7 @@
  */
 import {
     exchangeToken,
+    Fetch,
 } from '@lib/github';
 import {
     HttpStatus,
@@ -18,7 +19,6 @@ import {
     authLoginCallbackRoute,
 } from '@webui/routes';
 import Session from '@webui/session';
-import fetchPonyfill from 'fetch-ponyfill';
 import createHttpError from 'http-errors';
 import {
     posix as posixPath,
@@ -28,9 +28,8 @@ import {
     getLoginCallbackUrl,
 } from '../paths';
 
-const { fetch } = fetchPonyfill();
-
 type Options = {
+    fetch: Fetch;
     req: Request,
     resp: Response,
     session: Session,
@@ -59,7 +58,7 @@ export async function handleLoginCallback(opts: Options): Promise<void> {
         clientId: opts.githubClientId,
         clientSecret: opts.githubClientSecret,
         code,
-        fetch,
+        fetch: opts.fetch,
         redirectUri: getLoginCallbackUrl({
             host: req.host,
             mountPath: req.mountPath,

@@ -3,6 +3,9 @@ import {
     extractEnvVar,
 } from '@lib/env';
 import {
+    Fetch,
+} from '@lib/fetch';
+import {
     HttpStatus,
     mount,
     Request,
@@ -18,6 +21,7 @@ import {
     resolveFsPath,
 } from '@lib/url-path';
 import * as WebUi from '@webui/server';
+import fetchPonyfill from 'fetch-ponyfill';
 import http from 'http';
 import createHttpError from 'http-errors';
 import path from 'path';
@@ -59,6 +63,7 @@ type RequestMainOptions = {
     githubClientId: string;
     githubClientSecret: string;
     githubToken: string;
+    fetch: Fetch;
 };
 
 /**
@@ -81,11 +86,14 @@ async function requestMain(options: RequestMainOptions): Promise<void> {
         return;
     }
 
-    await WebUi.main(req, resp, {
+    await WebUi.main({
+        fetch: options.fetch,
         githubClientId: options.githubClientId,
         githubClientSecret: options.githubClientSecret,
         githubToken: options.githubToken,
         jobRunner: options.jobRunner,
+        req,
+        resp,
         secure: options.secure,
         sessionSecret: options.sessionSecret,
     });
@@ -109,8 +117,10 @@ function main(): void {
     const jobRunner = new JobRunner<any>({
         stream: process.stderr,
     });
+    const { fetch } = fetchPonyfill();
     const serverCallback = wrapServerCallback((req, resp) => {
         return requestMain({
+            fetch,
             githubClientId: config.githubClientId,
             githubClientSecret: config.githubClientSecret,
             githubToken: config.githubToken,
