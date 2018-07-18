@@ -1,12 +1,20 @@
 import appConfig from '@config';
 import {
+    SystemClock,
+} from '@lib/clock';
+import {
     extractEnvVar,
 } from '@lib/env';
+import {
+    api3main as fakeGithubApiMain,
+    createGithubModel,
+} from '@lib/fake-github';
 import {
     Fetch,
 } from '@lib/fetch';
 import {
     HttpStatus,
+    mockFetch,
     mount,
     Request,
     Response,
@@ -38,6 +46,7 @@ interface Config {
     githubClientId: string;
     githubClientSecret: string;
     githubToken: string;
+    mock: string;
 }
 
 /**
@@ -48,6 +57,7 @@ function extractConfigFromEnv(): Config {
         githubClientId: extractEnvVar('GITHUB_CLIENT_ID'),
         githubClientSecret: extractEnvVar('GITHUB_CLIENT_SECRET'),
         githubToken: extractEnvVar('GITHUB_TOKEN'),
+        mock: extractEnvVar('MOCK', ''),
         port: parseInt(extractEnvVar('PORT', '5000'), 10),
         proxy: !!extractEnvVar('PROXY', ''),
         secure: !!extractEnvVar('SECURE', ''),
@@ -113,12 +123,29 @@ async function handleStatic(req: Request, resp: Response): Promise<void> {
     await setBodyFile(resp, staticFile);
 }
 
-function main(): void {
+async function main(): Promise<void> {
     const config: Config = extractConfigFromEnv();
     const jobRunner = new MemoryJobRunner<any>({
         stream: process.stderr,
     });
-    const { fetch } = fetchPonyfill();
+    let fetch: Fetch = fetchPonyfill().fetch;
+    if (config.mock) {
+        const clock = new SystemClock();
+        const githubModel = await createGithubModel({
+            clock,
+            dir: config.mock,
+        });
+        const genAccessToken = () => 'testusertoken';
+        fetch = mockFetch((req, resp) => {
+            return fakeGithubApiMain({
+                genAccessToken,
+                model: githubModel,
+                req,
+                resp,
+            });
+        });
+    }
+
     const serverCallback = wrapServerCallback((req, resp) => {
         return requestMain({
             fetch,
@@ -138,4 +165,7 @@ function main(): void {
     server.listen(config.port, 'localhost');
 }
 
-main();
+main().catch(e => {
+    console.error(e.stack || e);
+    process.exit(1);
+});
