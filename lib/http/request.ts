@@ -105,6 +105,11 @@ type RequestOptions = {
     console?: RequestConsole;
 
     /**
+     * Additional headers.
+     */
+    headers?: { [key: string]: string };
+
+    /**
      * Request body (if any).
      */
     body?: string | Buffer;
@@ -125,10 +130,17 @@ export function createRequest(options: RequestOptions): Request {
         query.set(key, parsedQs[key]);
     }
 
+    const headers: { [key: string]: string } = {};
+    if (typeof options.headers === 'object') {
+        for (const key of Object.keys(options.headers)) {
+            headers[key.toLowerCase()] = options.headers[key];
+        }
+    }
+
     return {
         body: handleBody(options.body),
         console,
-        headers: {},
+        headers,
         host: parsedUrl.host,
         id: options.id,
         method: options.method,

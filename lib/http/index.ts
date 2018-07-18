@@ -51,3 +51,7 @@ export {
 export {
     Route,
 } from './route';
+export {
+    Fetch,
+    mockFetch,
+} from './mock-fetch';
