@@ -50,11 +50,24 @@ function extractConfigFromEnv(): Config {
     };
 }
 
+type RequestMainOptions = {
+    req: Request;
+    resp: Response;
+    jobRunner: JobRunner<any>;
+    secure: boolean;
+    sessionSecret: string;
+    githubClientId: string;
+    githubClientSecret: string;
+    githubToken: string;
+};
+
 /**
  * Main request entry point.
  */
-async function main(req: Request, resp: Response, config: Config, jobRunner: JobRunner<any>): Promise<void> {
-    if (config.secure && req.protocol !== 'https') {
+async function requestMain(options: RequestMainOptions): Promise<void> {
+    const {req, resp} = options;
+
+    if (options.secure && req.protocol !== 'https') {
         throw createHttpError(HttpStatus.NOT_IMPLEMENTED,
                 'This website must be accessed over https', {
                     expose: true,
@@ -69,12 +82,12 @@ async function main(req: Request, resp: Response, config: Config, jobRunner: Job
     }
 
     await WebUi.main(req, resp, {
-        githubClientId: config.githubClientId,
-        githubClientSecret: config.githubClientSecret,
-        githubToken: config.githubToken,
-        jobRunner,
-        secure: config.secure,
-        sessionSecret: config.sessionSecret,
+        githubClientId: options.githubClientId,
+        githubClientSecret: options.githubClientSecret,
+        githubToken: options.githubToken,
+        jobRunner: options.jobRunner,
+        secure: options.secure,
+        sessionSecret: options.sessionSecret,
     });
 }
 
@@ -91,11 +104,27 @@ async function handleStatic(req: Request, resp: Response): Promise<void> {
     await setBodyFile(resp, staticFile);
 }
 
-const config: Config = extractConfigFromEnv();
-const jobRunner = new JobRunner<any>({
-    stream: process.stderr,
-});
-const server = http.createServer(wrapServerCallback((req, resp) => main(req, resp, config, jobRunner), {
-    proxy: config.proxy,
-}));
-server.listen(config.port, 'localhost');
+function main(): void {
+    const config: Config = extractConfigFromEnv();
+    const jobRunner = new JobRunner<any>({
+        stream: process.stderr,
+    });
+    const serverCallback = wrapServerCallback((req, resp) => {
+        return requestMain({
+            githubClientId: config.githubClientId,
+            githubClientSecret: config.githubClientSecret,
+            githubToken: config.githubToken,
+            jobRunner,
+            req,
+            resp,
+            secure: config.secure,
+            sessionSecret: config.sessionSecret,
+        });
+    }, {
+        proxy: config.proxy,
+    });
+    const server = http.createServer(serverCallback);
+    server.listen(config.port, 'localhost');
+}
+
+main();
