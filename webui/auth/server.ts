@@ -23,7 +23,6 @@ import {
 import Session from '@webui/session';
 import fetchPonyfill from 'fetch-ponyfill';
 import createHttpError from 'http-errors';
-import simpleOauth2 from 'simple-oauth2';
 import handleLogin from './login/server';
 import handleLoginCallback from './loginCallback/server';
 import handleLogout from './logout/server';
@@ -51,28 +50,16 @@ type Options = {
 export async function handleAuthRoutes(opts: Options): Promise<void> {
     const { req } = opts;
 
-    const oauth2 = simpleOauth2.create({
-        auth: {
-            authorizePath: '/login/oauth/authorize',
-            tokenHost: 'https://github.com',
-            tokenPath: '/login/oauth/access_token',
-        },
-        client: {
-            id: opts.githubClientId,
-            secret: opts.githubClientSecret,
-        },
-    });
-
     if (authLoginRoute.testPath(req.pathname)) {
         await handleLogin({
-            oauth2,
+            githubClientId: opts.githubClientId,
             req: opts.req,
             resp: opts.resp,
-            scope: '',
         });
     } else if (authLoginCallbackRoute.testPath(req.pathname)) {
         await handleLoginCallback({
-            oauth2,
+            githubClientId: opts.githubClientId,
+            githubClientSecret: opts.githubClientSecret,
             req: opts.req,
             resp: opts.resp,
             session: opts.session,

@@ -21,3 +21,7 @@ export * from './issue';
 export {
     adaptFetchCache,
 } from './fetch-cache';
+export {
+    exchangeToken,
+    getAuthorizationUrl,
+} from './oauth2';
