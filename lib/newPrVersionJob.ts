@@ -31,7 +31,7 @@ export function escapeMarkdown(str: string): string {
  * Format the comment to post to GitHub.
  */
 export function formatComment(prInfo: github.PrInfo, prCommits: prstore.Commit[],
-        version: number, interdiffSha?: string): string {
+        baseSha: string, headSha: string, version: number, interdiffSha?: string): string {
     const ownerEncoded = encodeURIComponent(prInfo.base.repo.owner.login);
     const repoEncoded = encodeURIComponent(prInfo.base.repo.name);
 
@@ -55,7 +55,7 @@ export function formatComment(prInfo: github.PrInfo, prCommits: prstore.Commit[]
 
     // miniBar: Archive
     const archiveUrl = `https://github.com/${ownerEncoded}/${repoEncoded}/compare/` +
-        `${prInfo.base.sha}...${prInfo.head.sha}`;
+        `${baseSha}...${headSha}`;
     miniBar.push(`([:books: Archive](${archiveUrl}))`);
 
     // miniBar: Interdiff
@@ -96,8 +96,11 @@ export function makeNewVersionJob(opts: JobOptions): Job<void> {
         const console = new Console(outStream);
 
         const repoFullName = opts.prInfo.base.repo.full_name;
+        const incomingRepoFullName = opts.prInfo.head.repo.full_name;
+        const incomingBranch = opts.prInfo.head.ref;
         const owner = opts.prInfo.base.repo.owner.login;
         const repo = opts.prInfo.base.repo.name;
+        const baseBranch = opts.prInfo.base.ref;
         const prNumber = opts.prInfo.number;
 
         const tmpDir = await tmp.dir({
@@ -113,21 +116,33 @@ export function makeNewVersionJob(opts: JobOptions): Job<void> {
         let nextVersion: number;
         let newVersion: prstore.Version;
         let prCommits: prstore.Commit[];
+        let baseSha: string;
+        let headSha: string;
         try {
-            const url = `https://${opts.githubToken}@github.com/${repoFullName}.git`;
-            await prstore.initWorkRepo(shell, url);
+            // Support for mock fake-github: If the clone_url does not actually use
+            // the `https://` scheme, we assume we have full access to the repo
+            // and not need to provide the github token.
+            const isGithubRemote = opts.prInfo.base.repo.clone_url.startsWith('https://');
 
-            await prstore.fetchPr(shell, prNumber);
+            const url = isGithubRemote
+                ? `https://${opts.githubToken}@github.com/${repoFullName}.git`
+                : opts.prInfo.base.repo.clone_url;
+            await prstore.initWorkRepo(shell, url);
+            baseSha = await prstore.getBranchSha(shell, baseBranch);
+
+            const incomingUrl = isGithubRemote
+                ? `https://${opts.githubToken}@github.com/${incomingRepoFullName}.git`
+                : opts.prInfo.head.repo.clone_url;
+            headSha = await prstore.fetchPr2(shell, incomingUrl, incomingBranch);
 
             nextVersion = (await prstore.getVersions(shell, prNumber)).length;
             if (!nextVersion) {
                 nextVersion = 1;
             }
 
-            // TODO: Using opts.prInfo.base.sha is WRONG! It is not the fork point from the
-            // master branch, but rather where the master branch is when the PR was updated.
-            newVersion = await prstore.makeVersion(shell, prNumber, nextVersion,
-                opts.prInfo.base.sha, opts.prInfo.head.sha);
+            // NOTE: baseSha is the current SHA of the base branch, and is not necessarily
+            // the commit where head branched from base.
+            newVersion = await prstore.makeVersion(shell, prNumber, nextVersion, baseSha, headSha);
             await prstore.pushVersions(shell, prNumber, [nextVersion]);
 
             prCommits = await prstore.getVersionCommits(shell, prNumber, nextVersion);
@@ -141,7 +156,7 @@ export function makeNewVersionJob(opts: JobOptions): Job<void> {
             token: opts.githubToken,
             userAgent: 'CanIHasReview',
         });
-        const commentBody = formatComment(opts.prInfo, prCommits, nextVersion, newVersion.interdiff);
+        const commentBody = formatComment(opts.prInfo, prCommits, baseSha, headSha, nextVersion, newVersion.interdiff);
         await github.postIssueComment(ghBotApi, owner, repo, prNumber, commentBody);
 
         // Labels
