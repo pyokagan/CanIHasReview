@@ -6,3 +6,8 @@ export {
     Status,
     status,
 } from './status';
+export {
+    getCommitMessageSubject,
+    getCommitMessageBody,
+    splitIdent,
+} from './util';
