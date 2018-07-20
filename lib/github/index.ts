@@ -25,3 +25,14 @@ export {
     exchangeToken,
     getAuthorizationUrl,
 } from './oauth2';
+export {
+    Commit,
+    CommitIdent,
+    CommitParent,
+    CommitTree,
+    getCommit,
+    isCommit,
+    isCommitIdent,
+    isCommitParent,
+    isCommitTree,
+} from './git';
