@@ -19,11 +19,8 @@ import {
 
 export interface IssueComment {
     id: number;
-    html_url: string;
     body: string;
     user: MiniPublicUserInfo;
-    created_at: string;
-    updated_at: string;
 }
 
 /**
@@ -36,11 +33,8 @@ export function isIssueComment(value: any): value is IssueComment {
 
     const obj: Partial<IssueComment> = value;
     return typeof obj.id === 'number' &&
-        typeof obj.html_url === 'string' &&
         typeof obj.body === 'string' &&
-        isMiniPublicUserInfo(obj.user) &&
-        typeof obj.created_at === 'string' &&
-        typeof obj.updated_at === 'string';
+        isMiniPublicUserInfo(obj.user);
 }
 /**
  * Get an issue comment.

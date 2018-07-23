@@ -63,14 +63,16 @@ function PrStatusLine(props: PrStatusLineProps): JSX.Element {
     const { prInfo } = props;
     const { user, base, head, merged, commits } = prInfo;
     const numCommits = `${commits} ${ commits === 1 ? 'commit' : 'commits' }`;
+    const baseLabel = `${base.repo.owner.login}:${base.ref}`;
+    const headLabel = `${head.repo.owner.login}:${head.ref}`;
     let message: JSX.Element;
     if (merged) {
         const mergedBy = prInfo.merged_by ? prInfo.merged_by.login : 'unknown';
-        message = <div>{mergedBy} merged {numCommits} into <code>{base.label}</code> from
-            <code>{head.label}</code></div>;
+        message = <div>{mergedBy} merged {numCommits} into <code>{baseLabel}</code> from{' '}
+            <code>{headLabel}</code></div>;
     } else {
-        message = <div>{user.login} wants to merge {numCommits} into <code>{base.label}</code> from
-            <code>{head.label}</code></div>;
+        message = <div>{user.login} wants to merge {numCommits} into <code>{baseLabel}</code> from{' '}
+            <code>{headLabel}</code></div>;
     }
     return <div className='d-flex flex-column justify-content-center'>
         <div className='text-muted' style={{fontSize: '0.8rem'}}>

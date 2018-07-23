@@ -31,13 +31,7 @@ import {
 } from '../user';
 
 interface RepoRef {
-    label: string;
     ref: string;
-    /**
-     * This is the SHA of `ref` *at the time where the PR was created or updated*,
-     * and may not be the current value of `ref`.
-     */
-    sha: string;
     user: MiniPublicUserInfo;
     repo: RepoInfo;
 }
@@ -48,9 +42,7 @@ function isRepoRef(value: any): value is RepoRef {
     }
 
     const obj: Partial<RepoRef> = value;
-    return typeof obj.label === 'string' &&
-        typeof obj.ref === 'string' &&
-        typeof obj.sha === 'string' &&
+    return typeof obj.ref === 'string' &&
         isMiniPublicUserInfo(obj.user) &&
         isRepoInfo(obj.repo);
 }
@@ -68,31 +60,14 @@ export interface PrInfo {
     state: PrState;
     title: string;
     body: string;
-    assignee: MiniPublicUserInfo | null;
-    assignees: MiniPublicUserInfo[];
-    milestone: {} | null;
     locked: boolean;
-    created_at: string;
-    updated_at: string;
-    closed_at: string | null;
-    merged_at: string | null;
     head: RepoRef;
     base: RepoRef;
     user: MiniPublicUserInfo;
-    merge_commit_sha: string;
     merged: boolean;
-    mergeable: boolean | null;
-    rebaseable: boolean | null;
     merged_by: MiniPublicUserInfo | null;
-    comments: number;
-    review_comments: number;
     commits: number;
-    additions: number;
-    deletions: number;
-    changed_files: number;
     maintainer_can_modify: boolean;
-    requested_reviewers: any[];
-    html_url: string;
 }
 
 /**
@@ -110,32 +85,14 @@ export function isPrInfo(value: any): value is PrInfo {
         PrState.indexOf(obj.state) >= 0 &&
         typeof obj.title === 'string' &&
         typeof obj.body === 'string' &&
-        (isMiniPublicUserInfo(obj.assignee) || obj.assignee === null) &&
-        Array.isArray(obj.assignees) &&
-        every(obj.assignees, isMiniPublicUserInfo) &&
-        (isObjectLike(obj.milestone) || obj.milestone === null) &&
         typeof obj.locked === 'boolean' &&
-        typeof obj.created_at === 'string' &&
-        typeof obj.updated_at === 'string' &&
-        (typeof obj.closed_at === 'string' || obj.closed_at === null) &&
-        (typeof obj.merged_at === 'string' || obj.merged_at === null) &&
         isRepoRef(obj.head) &&
         isRepoRef(obj.base) &&
         isMiniPublicUserInfo(obj.user) &&
-        typeof obj.merge_commit_sha === 'string' &&
         typeof obj.merged === 'boolean' &&
-        (typeof obj.mergeable === 'boolean' || obj.mergeable === null) &&
-        (typeof obj.rebaseable === 'boolean' || obj.rebaseable === null) &&
         (isMiniPublicUserInfo(obj.merged_by) || obj.merged_by === null) &&
-        typeof obj.comments === 'number' &&
-        typeof obj.review_comments === 'number' &&
         typeof obj.commits === 'number' &&
-        typeof obj.additions === 'number' &&
-        typeof obj.deletions === 'number' &&
-        typeof obj.changed_files === 'number' &&
-        typeof obj.maintainer_can_modify === 'boolean' &&
-        Array.isArray(obj.requested_reviewers) &&
-        typeof obj.html_url === 'string';
+        typeof obj.maintainer_can_modify === 'boolean';
 }
 
 export async function getPrInfo(fetch: Fetch, owner: string, repo: string, pr: number | string): Promise<PrInfo> {
