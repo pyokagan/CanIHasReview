@@ -3,10 +3,9 @@ import {
     LineTransform,
 } from '@lib/stream-util';
 import isObjectLike from 'lodash/isObjectLike';
-import stream from 'stream';
 import uuid from 'uuid';
 
-export type Job<T> = (name: string, stream: stream.Writable) => Promise<T>;
+export type Job<T> = (name: string, stream: NodeJS.WritableStream) => Promise<T>;
 
 export interface JobRunnerOptions {
     /**
