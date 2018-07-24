@@ -163,6 +163,21 @@ async function main(): Promise<void> {
     });
     const server = http.createServer(serverCallback);
     server.listen(config.port, 'localhost');
+
+    let terminating = false;
+    process.on('SIGTERM', () => {
+        if (terminating) {
+            return;
+        }
+        terminating = true;
+        const serverClose = new Promise(resolve => server.close(resolve));
+        Promise.all([serverClose, jobRunner.shutdown()]).then(() => {
+            process.exit(0);
+        }, e => {
+            console.error(e.stack || e);
+            process.exit(1);
+        });
+    });
 }
 
 main().catch(e => {
