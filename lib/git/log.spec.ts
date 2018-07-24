@@ -1,3 +1,6 @@
+import {
+    StaticClock,
+} from '@lib/clock';
 import assert from 'assert';
 import {
     suite,
@@ -16,10 +19,14 @@ import {
  */
 @suite('lib/git#log()')
 export class LogTests {
+    private clock: StaticClock;
     private repo: TmpGitRepo;
 
     async before(): Promise<void> {
-        this.repo = await makeTmpGitRepo();
+        this.clock = new StaticClock(1112911993);
+        this.repo = await makeTmpGitRepo({
+            clock: this.clock,
+        });
         await this.repo.writeFile('file', 'a');
         await this.repo.checkCall('git', ['add', 'file']);
         await this.repo.checkCall('git', ['commit', '-m', 'initial commit']);
@@ -46,7 +53,7 @@ export class LogTests {
     @test
     async 'parses commit with one parent'(): Promise<void> {
         await this.repo.writeFile('file', 'b');
-        this.repo.tick();
+        this.clock.advance(60);
         await this.repo.checkCall('git', ['commit', '-a', '-m', 'commit 2\n\nmessage']);
         const actual = await log(this.repo);
         const expected = [{
@@ -71,10 +78,10 @@ export class LogTests {
     async 'parses commit with two parents'(): Promise<void> {
         await this.repo.checkCall('git', ['checkout', '-b', 'side']);
         await this.repo.writeFile('file', 'side');
-        this.repo.tick();
+        this.clock.advance(60);
         await this.repo.checkCall('git', ['commit', '-a', '-m', 'side-commit']);
         await this.repo.checkCall('git', ['checkout', 'master']);
-        this.repo.tick();
+        this.clock.advance(60);
         await this.repo.checkCall('git', ['merge', '--no-ff', '--no-edit', 'side']);
         const actual = await log(this.repo, ['HEAD^..HEAD']);
         const expected = [{

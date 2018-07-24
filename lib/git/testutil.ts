@@ -4,7 +4,6 @@
  */
 import {
     Clock,
-    StaticClock,
     SystemClock,
 } from '@lib/clock';
 import {
@@ -96,21 +95,27 @@ export class GitShell implements Shell {
     }
 }
 
+interface MakeTmpGitRepoOptions {
+    clock: Clock;
+    authorName?: string;
+    authorEmail?: string;
+    committerName?: string;
+    committerEmail?: string;
+}
+
 /**
  * A temporary git repo meant for testing.
  */
 export class TmpGitRepo implements Shell {
     private readonly gitShell: GitShell;
     private readonly tmpDir: tmp.TmpDir;
-    private readonly clock: StaticClock;
 
-    constructor(tmpDir: tmp.TmpDir) {
+    constructor(tmpDir: tmp.TmpDir, options: MakeTmpGitRepoOptions) {
         this.tmpDir = tmpDir;
-        this.clock = new StaticClock(1112911993);
         this.gitShell = new GitShell({
-            authorEmail: 'author@example.com',
-            authorName: 'A U Thor',
-            clock: this.clock,
+            authorEmail: options.authorEmail || 'author@example.com',
+            authorName: options.authorName || 'A U Thor',
+            clock: options.clock,
             committerEmail: 'committer@example.com',
             committerName: 'C O Mitter',
             dir: this.tmpDir.path,
@@ -119,10 +124,6 @@ export class TmpGitRepo implements Shell {
 
     cleanup(): void {
         this.tmpDir.cleanup();
-    }
-
-    tick(): void {
-        this.clock.advance(60);
     }
 
     call(command: string, args: string[], options?: ShellOptions): Promise<number> {
@@ -142,11 +143,34 @@ export class TmpGitRepo implements Shell {
     }
 }
 
-export async function makeTmpGitRepo(): Promise<TmpGitRepo> {
+export async function makeTmpGitRepo(options: MakeTmpGitRepoOptions): Promise<TmpGitRepo> {
     const tmpDir = await tmp.dir({
         unsafeCleanup: true,
     });
-    const repo = new TmpGitRepo(tmpDir);
-    await repo.checkCall('git', ['init']);
+    const repo = new TmpGitRepo(tmpDir, options);
+    try {
+        await repo.checkCall('git', ['init']);
+    } catch (e) {
+        repo.cleanup();
+        throw e;
+    }
+    return repo;
+}
+
+interface CloneRepoOptions extends MakeTmpGitRepoOptions {
+    url: string;
+}
+
+export async function cloneRepo(options: CloneRepoOptions): Promise<TmpGitRepo> {
+    const tmpDir = await tmp.dir({
+        unsafeCleanup: true,
+    });
+    const repo = new TmpGitRepo(tmpDir, options);
+    try {
+        await repo.checkCall('git', ['clone', options.url, tmpDir.path]);
+    } catch (e) {
+        repo.cleanup();
+        throw e;
+    }
     return repo;
 }
