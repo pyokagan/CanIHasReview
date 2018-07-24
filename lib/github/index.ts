@@ -1,6 +1,8 @@
 export {
     baseUrl,
+    createAccessTokenApi,
     createApi,
+    createAppApi,
 } from './api';
 export {
     Fetch,
@@ -36,3 +38,11 @@ export {
     isCommitParent,
     isCommitTree,
 } from './git';
+export {
+    Installation,
+    InstallationAccessToken,
+    createInstallationAccessToken,
+    getRepoInstallation,
+    isInstallation,
+    isInstallationAccessToken,
+} from './apps';

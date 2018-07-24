@@ -125,13 +125,13 @@ export function makeNewVersionJob(opts: JobOptions): Job<void> {
             const isGithubRemote = opts.prInfo.base.repo.clone_url.startsWith('https://');
 
             const url = isGithubRemote
-                ? `https://${opts.githubToken}@github.com/${repoFullName}.git`
+                ? `https://x-access-token:${opts.githubToken}@github.com/${repoFullName}.git`
                 : opts.prInfo.base.repo.clone_url;
             await prstore.initWorkRepo(shell, url);
             baseSha = await prstore.getBranchSha(shell, baseBranch);
 
             const incomingUrl = isGithubRemote
-                ? `https://${opts.githubToken}@github.com/${incomingRepoFullName}.git`
+                ? `https://x-access-token:${opts.githubToken}@github.com/${incomingRepoFullName}.git`
                 : opts.prInfo.head.repo.clone_url;
             headSha = await prstore.fetchPr2(shell, incomingUrl, incomingBranch);
 
@@ -151,7 +151,7 @@ export function makeNewVersionJob(opts: JobOptions): Job<void> {
         }
 
         // Post comment
-        const ghBotApi = github.createApi({
+        const ghBotApi = github.createAccessTokenApi({
             fetch: opts.fetch,
             token: opts.githubToken,
             userAgent: 'CanIHasReview',

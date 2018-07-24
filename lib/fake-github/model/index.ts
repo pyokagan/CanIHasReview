@@ -53,3 +53,10 @@ export {
     hasIssue,
     listIssues,
 } from './issues';
+export {
+    createApp,
+    createInstallation,
+    getRepoInstallation,
+    hasApp,
+    readApp,
+} from './apps';

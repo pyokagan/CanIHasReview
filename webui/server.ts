@@ -43,7 +43,8 @@ type Options = {
     secure?: boolean;
     githubClientId: string;
     githubClientSecret: string;
-    githubToken: string;
+    githubAppId: number;
+    githubAppPrivateKey: string;
     jobRunner: JobRunner<any>;
 };
 
@@ -90,7 +91,8 @@ export async function main(options: Options): Promise<void> {
             await handlePull({
                 auth,
                 fetch,
-                githubToken: options.githubToken,
+                githubAppId: options.githubAppId,
+                githubAppPrivateKey: options.githubAppPrivateKey,
                 jobRunner: options.jobRunner,
                 req,
                 resp,

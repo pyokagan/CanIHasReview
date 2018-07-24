@@ -28,7 +28,8 @@ interface Options {
     req: Request;
     resp: Response;
     jobRunner: JobRunner<any>;
-    githubToken: string;
+    githubAppId: number;
+    githubAppPrivateKey: string;
     auth: AuthContext | undefined;
 }
 
@@ -57,7 +58,8 @@ export async function handlePull(opts: Options): Promise<void> {
         await Post.handlePullPost({
             auth,
             fetch: opts.fetch,
-            githubToken: opts.githubToken,
+            githubAppId: opts.githubAppId,
+            githubAppPrivateKey: opts.githubAppPrivateKey,
             jobRunner: opts.jobRunner,
             req,
             resp,

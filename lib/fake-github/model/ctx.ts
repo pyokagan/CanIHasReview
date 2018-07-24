@@ -155,6 +155,23 @@ async function createDb(db: sqlite3.Database): Promise<void> {
             foreign key(clientid) references oauthclients(id),
             foreign key(userid) references users(id)
         );
+        create table apps(
+            id integer primary key,
+            name text not null,
+            userid integer,
+            oauthclientid text,
+            publickey text,
+            foreign key(userid) references users(id),
+            foreign key(oauthclientid) references oauthclients(id)
+        );
+        create table installations(
+            id integer primary key,
+            repoid integer,
+            appid integer,
+            foreign key(repoid) references repos(id),
+            foreign key(appid) references apps(id),
+            unique(repoid, appid)
+        );
         insert into config values("version", 1);
         commit;
     `);

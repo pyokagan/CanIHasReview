@@ -4,7 +4,7 @@
  */
 import fetchPonyfill from 'fetch-ponyfill';
 import {
-    createApi,
+    createAccessTokenApi,
 } from './api';
 import {
     Fetch,
@@ -18,9 +18,9 @@ export function createApiForTest(mocha: Mocha.IBeforeAndAfterContext): Fetch {
     if (!GITHUB_TOKEN) {
         mocha.skip();
     }
-    return createApi({
+    return createAccessTokenApi({
         fetch,
-        token: GITHUB_TOKEN,
+        token: GITHUB_TOKEN!,
         userAgent,
     });
 }

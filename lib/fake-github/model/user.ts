@@ -13,7 +13,7 @@ import {
 export interface DiskUser {
     id: number;
     login: string;
-    type: 'User' | 'Organization';
+    type: 'User' | 'Organization' | 'Bot';
     name: string;
     company: string | null;
     blog: string;
@@ -31,7 +31,7 @@ export function isDiskUser(val: any): val is DiskUser {
     const obj: Partial<DiskUser> = val;
     return typeof obj.id === 'number' &&
         typeof obj.login === 'string' &&
-        (obj.type === 'User' || obj.type === 'Organization') &&
+        (obj.type === 'User' || obj.type === 'Organization' || obj.type === 'Bot') &&
         typeof obj.name === 'string' &&
         (typeof obj.company === 'string' || obj.company === null) &&
         typeof obj.blog === 'string' &&
@@ -120,6 +120,12 @@ export async function createOrganization(ctx: GithubModel, login: string): Promi
     }
     await sqlite3.run(ctx.db, `insert into users(login, type, name) values(?, ?, ?)`,
             [login, 'Organization', `${login} name`]);
+}
+
+export async function createBot(ctx: GithubModel, login: string): Promise<number> {
+    return await sqlite3.runWithRowId(ctx.db,
+        `insert into users(login, type, name) values(?, ?, ?)`,
+        [login, 'Bot', `${login} name`]);
 }
 
 export async function getPublicUserInfo(ctx: GithubModel, login: string): Promise<PublicUserInfo> {

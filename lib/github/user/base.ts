@@ -15,6 +15,7 @@ import {
 } from '../fetch';
 
 const UserType_obj = {
+    'Bot': 0,
     'Organization': 0,
     'User': 0,
 };

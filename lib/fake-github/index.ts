@@ -36,6 +36,10 @@ export {
     listIssues,
     listLabels,
     listUsers,
+    createApp,
+    createInstallation,
+    getRepoInstallation,
+    hasApp,
 } from './model';
 export {
     main as api3main,

@@ -35,7 +35,8 @@ type Options = {
     resp: Response;
     auth: AuthContext;
     jobRunner: JobRunner<any>;
-    githubToken: string;
+    githubAppId: number;
+    githubAppPrivateKey: string;
 };
 
 export async function handlePullPost(opts: Options): Promise<void> {
@@ -68,10 +69,21 @@ export async function handlePullPost(opts: Options): Promise<void> {
         throw createHttpError(HttpStatus.FORBIDDEN, 'One or more checks failed');
     }
 
+    // Get access token for job
+    const appFetch = github.createAppApi({
+        appId: opts.githubAppId,
+        expiresIn: 60 * 5,
+        fetch: opts.fetch,
+        privateKey: opts.githubAppPrivateKey,
+        userAgent: 'CanIHasReview',
+    });
+    const installation = await github.getRepoInstallation(appFetch, prInfo.base.user.login, prInfo.base.repo.name);
+    const accessToken = await github.createInstallationAccessToken(appFetch, installation.id);
+
     // Create and run job
     const job = makeNewVersionJob({
         fetch: opts.fetch,
-        githubToken: opts.githubToken,
+        githubToken: accessToken.token,
         prInfo,
         repoConfig,
     });

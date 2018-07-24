@@ -45,7 +45,8 @@ interface Config {
     sessionSecret: string;
     githubClientId: string;
     githubClientSecret: string;
-    githubToken: string;
+    githubAppId: number;
+    githubAppPrivateKey: string;
     mock: string;
     mountPath: string;
 }
@@ -55,9 +56,10 @@ interface Config {
  */
 function extractConfigFromEnv(): Config {
     return {
+        githubAppId: parseInt(extractEnvVar('GITHUB_APP_ID'), 10),
+        githubAppPrivateKey: extractEnvVar('GITHUB_APP_PRIVATE_KEY'),
         githubClientId: extractEnvVar('GITHUB_CLIENT_ID'),
         githubClientSecret: extractEnvVar('GITHUB_CLIENT_SECRET'),
-        githubToken: extractEnvVar('GITHUB_TOKEN'),
         mock: extractEnvVar('MOCK', ''),
         mountPath: extractEnvVar('MOUNTPATH', ''),
         port: parseInt(extractEnvVar('PORT', '5000'), 10),
@@ -75,7 +77,8 @@ type RequestMainOptions = {
     sessionSecret: string;
     githubClientId: string;
     githubClientSecret: string;
-    githubToken: string;
+    githubAppId: number;
+    githubAppPrivateKey: string;
     fetch: Fetch;
     mountPath: string;
 };
@@ -102,9 +105,10 @@ async function requestMain(options: RequestMainOptions): Promise<void> {
 
     handled = await mount(req, options.mountPath, () => WebUi.main({
         fetch: options.fetch,
+        githubAppId: options.githubAppId,
+        githubAppPrivateKey: options.githubAppPrivateKey,
         githubClientId: options.githubClientId,
         githubClientSecret: options.githubClientSecret,
-        githubToken: options.githubToken,
         jobRunner: options.jobRunner,
         req,
         resp,
@@ -157,9 +161,10 @@ async function main(): Promise<void> {
     const serverCallback = wrapServerCallback((req, resp) => {
         return requestMain({
             fetch,
+            githubAppId: config.githubAppId,
+            githubAppPrivateKey: config.githubAppPrivateKey,
             githubClientId: config.githubClientId,
             githubClientSecret: config.githubClientSecret,
-            githubToken: config.githubToken,
             jobRunner,
             mountPath: config.mountPath,
             req,

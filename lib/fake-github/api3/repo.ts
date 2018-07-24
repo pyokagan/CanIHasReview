@@ -1,21 +1,8 @@
-import {
-    HttpStatus,
-    Request,
-    Response,
-    setBodyJson,
-} from '@lib/http';
+import { HttpStatus, Request, Response, setBodyJson } from '@lib/http';
 import createHttpError from 'http-errors';
-import {
-    getGithubBranch,
-    getRepoInfo,
-    GithubModel,
-    hasBranch,
-    hasRepo,
-} from '../model';
-import {
-    reposBranchesRoute,
-    reposRoute,
-} from './routes';
+import { getGithubBranch, getRepoInfo, getRepoInstallation, GithubModel, hasBranch, hasRepo } from '../model';
+import { reposBranchesRoute, reposInstallationRoute, reposRoute } from './routes';
+import { requireAppAuth } from './util';
 
 type HandleRepoRoutesOptions = {
     req: Request;
@@ -30,6 +17,8 @@ export async function handleRepoRoutes(opts: HandleRepoRoutesOptions): Promise<v
         await handleRepos(req, resp, model);
     } else if (reposBranchesRoute.testPath(req.pathname)) {
         await handleGetBranch(req, resp, model);
+    } else if (reposInstallationRoute.testPath(req.pathname)) {
+        await handleInstallation(req, resp, model);
     } else {
         throw createHttpError(HttpStatus.NOT_FOUND);
     }
@@ -77,4 +66,24 @@ async function handleGetBranch(req: Request, resp: Response, model: GithubModel)
 
     const githubBranch = await getGithubBranch(model, owner, repo, branch);
     setBodyJson(resp, githubBranch);
+}
+
+async function handleInstallation(req: Request, resp: Response, model: GithubModel): Promise<void> {
+    const routeParams = reposInstallationRoute.matchPath(req.pathname, req.search);
+    if (!routeParams) {
+        throw new Error(`bad request path: ${req.pathname}${req.search}`);
+    }
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        throw createHttpError(HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    const { owner, repo } = routeParams;
+    const appId = await requireAppAuth(req, model);
+    const installation = await getRepoInstallation(model, appId, owner, repo);
+    if (!installation) {
+        throw createHttpError(HttpStatus.NOT_FOUND, `no installation found for appid ${appId} in ${owner}/${repo}`);
+    }
+
+    setBodyJson(resp, installation);
 }

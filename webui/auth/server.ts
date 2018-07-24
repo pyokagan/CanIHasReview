@@ -3,7 +3,7 @@
  * (Node-only) GitHub authentication.
  */
 import {
-    createApi as createGhApi,
+    createAccessTokenApi as createGhApi,
     Fetch,
     getAuthenticatedUserInfo,
     PublicUserInfo,

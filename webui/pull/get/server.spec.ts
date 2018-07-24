@@ -49,7 +49,7 @@ export class HandlerTest {
             });
         });
         this.auth = {
-            ghUserApi: github.createApi({
+            ghUserApi: github.createAccessTokenApi({
                 fetch: this.fetch,
                 token: 'testusertoken',
                 userAgent: 'CanIHasReview',

@@ -2,31 +2,15 @@
  * @module
  * Re-implementation of GitHub's API v3
  */
-import {
-    HttpStatus,
-    Request,
-    Response,
-    setBodyJson,
-} from '@lib/http';
-import {
-    STATUS_CODES,
-} from 'http';
+import { HttpStatus, Request, Response, setBodyJson } from '@lib/http';
+import { STATUS_CODES } from 'http';
 import createHttpError from 'http-errors';
-import {
-    GithubModel,
-} from '../model';
+import { GithubModel } from '../model';
+import handleInstallationsRoutes from './installations';
 import handleIssueRoutes from './issues';
-import {
-    handleOauthAccessToken,
-    OauthAccessTokenCallback,
-} from './oauth';
+import { handleOauthAccessToken, OauthAccessTokenCallback } from './oauth';
 import handleRepoRoutes from './repo';
-import {
-    issueRoutes,
-    oauthAccessTokenRoute,
-    repoRoutes,
-    userRoutes,
-} from './routes';
+import { installationsRoutes, issueRoutes, oauthAccessTokenRoute, repoRoutes, userRoutes } from './routes';
 import handleUserRoutes from './user';
 
 type MainOptions = {
@@ -63,6 +47,12 @@ export async function main(opts: MainOptions): Promise<void> {
             });
         } else if (issueRoutes.some(route => route.testPath(req.pathname))) {
             await handleIssueRoutes({
+                model,
+                req,
+                resp,
+            });
+        } else if (installationsRoutes.some(route => route.testPath(req.pathname))) {
+            await handleInstallationsRoutes({
                 model,
                 req,
                 resp,

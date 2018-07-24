@@ -33,9 +33,50 @@ import {
 } from 'mocha-typescript';
 import handlePullPost from './server';
 
+const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvNIj1OhMraob+GmnCFWq
+Jw4I48dGQx6PkA7IfXbSFVg3F3l9+9YtyM8txS8tqw7tCKGWECJyQ+MdquwUeNfD
+v1vBIMWs65hc0b5B0o2sFu8t8MhQpBI3URVO+7erR/bJb5EDkBDFFhp+De4O0Z4J
+Qgf9idhegL5+vXs3mivZFV2ogtFYUtE7CS0bboXDzGCe+BOJzUXg0hSFwET3x4tu
+aGEn8YRB+JfFRnInSelVNxS0yGVJwlbqeKCZVcXl8nkWJpT8Mj9qhRwNkLN5APYy
+F8RqC+L9sEZtAW1Vi7w3mlr7hHBd8zGc/gSMxJCc2iKtfNIBW04H7ptXDAZeAGfO
+HQIDAQAB
+-----END PUBLIC KEY-----
+`;
+
+const PRIVATE_KEY = `-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAvNIj1OhMraob+GmnCFWqJw4I48dGQx6PkA7IfXbSFVg3F3l9
++9YtyM8txS8tqw7tCKGWECJyQ+MdquwUeNfDv1vBIMWs65hc0b5B0o2sFu8t8MhQ
+pBI3URVO+7erR/bJb5EDkBDFFhp+De4O0Z4JQgf9idhegL5+vXs3mivZFV2ogtFY
+UtE7CS0bboXDzGCe+BOJzUXg0hSFwET3x4tuaGEn8YRB+JfFRnInSelVNxS0yGVJ
+wlbqeKCZVcXl8nkWJpT8Mj9qhRwNkLN5APYyF8RqC+L9sEZtAW1Vi7w3mlr7hHBd
+8zGc/gSMxJCc2iKtfNIBW04H7ptXDAZeAGfOHQIDAQABAoIBAQCp8w4TNJ7HdKPG
+O/n+U3RZwJUZxyOjh985j0S/QHIoigTUGSLex9DfvDH7F9Kn80A/k4jIruhf2Ay8
+6c4nUjS6iLBUefeA+dsZYYBHLgKlhdO4s+N5OXgWf/JeN9tvY129EC2/vohVs7Sf
+fxRRcUft6dk298tfX5Ydn8jU+ABk7CFGlZ5kSDmd52/sGvC1lsMh1NKRpdi6OhZh
+r8WOAd07VzlGtBUqDvZnq++o6ik4d/CLDmNelJ14pK+L1uNVXO9HSi2cLiyFyoI2
+qQWRBEmiqnB+zEXFiKEQNhSXUI1kaRpyC8P/FP9UvXD0jj9JtcakfgRwznnVw43k
+v6Wspk41AoGBAPBQUY+/ZIXBXUiB6gN2tH33uCqBaYPTjixIS8OcHuU24ENkYWh1
+nLRFxc1wJ8eZeO3r73LBRhhSUnlHf3DQyNe0QW27hUwhZ0OejoWdYLyCohDHG/nC
+vS9qJErLYgap5Wk/Wym2ilgDb58BkbvfXpgJsWIZJo0Fyi2/brEelvdLAoGBAMkl
+XfDVZdEWAIlBefzFNgtyWZdU4tUdYNP8cfG2jUrwva38TnQfEggHeytaZ9mzY9Sh
+vt29aRPitKI+NCEVT03kNo2ZPB08Nm52rAsbSi0HFDZ7pxELRGyGFMgDsK/7hQWt
+R45LsPnhtMohfP1NW+tcHTy7311qB0KZh1D1/Oc3AoGAbkTsqAEypw1rOHIkZyJ4
+/7RDlX18ZTkV68vguAlTQ+pCTaop6DzPgwjhErt8BWKu0r2ISifVeiOMJIpiN+oV
+vqS/wRJiv+Qz9hszWqw0T0vCAeDbPWfWV4Nk080vVc9vrTOdKS7RnEE3XsbhkEuW
+pD0OX+0ae2tEsmk86ZkXvLECgYEAnWNvrhJMKN5ebQeeu/pT34EKOS9ijf7+1OCj
+B88fn5Pf11Okz5fANCgmaDXFLMMBSk+FWVvr7HNng8vIXlqeQwRe600LjJSgwq54
+z/f6gmEXn8oBX4TBdWk0uYyppAnafCap5t2zDNNe8wphEpKFahQZjHw0upNMOwCG
+sQLJcOECgYABGME2oDvRGorW/H8VBxjjaZqpQVRBmVEdxmKpt5PXB+szU+eFHQ4I
+bjP0PCuOwci3uC6pnoKX6cTO5ogUbGEX6+FOLN5PSo3hXe+1KbPCzuMPmjaGIo4R
++RQ/tDVpo/NyJdQJO0M0ofPql++O2i6D8dZw6sYB9QynsKZUPlDWtQ==
+-----END RSA PRIVATE KEY-----
+`;
+
 @suite('webui/pull/post')
 export class HandlerTest {
     clock: StaticClock;
+    appId: number;
     githubModel: fakeGithub.GithubModel;
     fetch: Fetch;
     auth: AuthContext;
@@ -47,11 +88,9 @@ export class HandlerTest {
         this.githubModel = await fakeGithub.createGithubModel({
             clock: this.clock,
         });
+        this.appId = await fakeGithub.createApp(this.githubModel, 'CanIHasReview', PUBLIC_KEY);
         await fakeGithub.createUser(this.githubModel, 'testuser');
-        await fakeGithub.createOauthClient(this.githubModel, 'clientid', 'clientsecret');
-        await fakeGithub.createOauthToken(this.githubModel, 'testusertoken', 'clientid', 'testuser');
-        await fakeGithub.createUser(this.githubModel, 'CanIHasReview-bot');
-        await fakeGithub.createOauthToken(this.githubModel, 'bottoken', 'clientid', 'CanIHasReview-bot');
+        await fakeGithub.createOauthToken(this.githubModel, 'testusertoken', 'CanIHasReview.oauthclientid', 'testuser');
         this.fetch = mockFetch((req, resp) => {
             return fakeGithub.api3main({
                 model: this.githubModel,
@@ -60,7 +99,7 @@ export class HandlerTest {
             });
         });
         this.auth = {
-            ghUserApi: github.createApi({
+            ghUserApi: github.createAccessTokenApi({
                 fetch: this.fetch,
                 token: 'testusertoken',
                 userAgent: 'CanIHasReview',
@@ -90,6 +129,7 @@ export class HandlerTest {
             shell.cleanup();
         }
         await fakeGithub.createPr(this.githubModel, 'se-edu', 'addressbook-level4', 'master', 'testuser:side');
+        await fakeGithub.createInstallation(this.githubModel, this.appId, 'se-edu', 'addressbook-level4');
     }
 
     after(): void {
@@ -107,7 +147,8 @@ export class HandlerTest {
         await assertThrowsAsync(() => handlePullPost({
             auth: this.auth,
             fetch: this.fetch,
-            githubToken: 'bottoken',
+            githubAppId: this.appId,
+            githubAppPrivateKey: PRIVATE_KEY,
             jobRunner: this.jobRunner,
             req,
             resp,
@@ -132,7 +173,8 @@ export class HandlerTest {
             await assertThrowsAsync(() => handlePullPost({
                 auth: this.auth,
                 fetch: this.fetch,
-                githubToken: 'bottoken',
+                githubAppId: this.appId,
+                githubAppPrivateKey: PRIVATE_KEY,
                 jobRunner: this.jobRunner,
                 req,
                 resp,
@@ -157,7 +199,8 @@ export class HandlerTest {
         await assertThrowsAsync(() => handlePullPost({
             auth: this.auth,
             fetch: this.fetch,
-            githubToken: 'bottoken',
+            githubAppId: this.appId,
+            githubAppPrivateKey: PRIVATE_KEY,
             jobRunner: this.jobRunner,
             req,
             resp,
@@ -180,7 +223,8 @@ export class HandlerTest {
         await handlePullPost({
             auth: this.auth,
             fetch: this.fetch,
-            githubToken: 'bottoken',
+            githubAppId: this.appId,
+            githubAppPrivateKey: PRIVATE_KEY,
             jobRunner: this.jobRunner,
             req,
             resp,

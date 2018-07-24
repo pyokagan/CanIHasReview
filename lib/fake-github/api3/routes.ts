@@ -91,11 +91,19 @@ export interface ReposListCommitsRouteParams extends ReposRouteParams {
 export const reposListCommitsRoute: Route<ReposListCommitsRouteParams> =
     reposRoute.extend('commits', ['sha', 'path', 'author', 'since', 'until']);
 
+// == repos/installation
+
+// Get branch info
+export interface ReposInstallationRouteParams extends ReposRouteParams {}
+export const reposInstallationRoute: Route<ReposInstallationRouteParams> =
+    reposRoute.extend('installation');
+
 export const repoRoutes = [
     reposRoute,
     reposBranchesRoute,
     reposListCollaboratorsRoute,
     reposListCommitsRoute,
+    reposInstallationRoute,
 ];
 
 // == issues ==
@@ -125,4 +133,16 @@ export const issueRoutes = [
     prInfoRoute,
     prCommitsRoute,
     issueCommentsRoute,
+];
+
+// == installations ==
+
+export interface InstallationsAccessTokensParams {
+    installationid: string;
+}
+export const installationsAccessTokensRoute =
+    new Route<InstallationsAccessTokensParams>('/installations/:installationid/access_tokens');
+
+export const installationsRoutes = [
+    installationsAccessTokensRoute,
 ];

@@ -31,7 +31,8 @@ const { fetch } = fetchPonyfill();
 const sessionSecret = 'abc123';
 const githubClientId = 'dummyGithubClientId';
 const githubClientSecret = 'dummyGithubClientSecret';
-const githubToken = 'dummyGithubToken';
+const githubAppId = 123;
+const githubAppPrivateKey = 'dummyGithubAppPrivateKey';
 
 @suite('webui/server#main')
 export class MainTest {
@@ -59,9 +60,10 @@ export class MainTest {
         setSession(expectedResp, {}, { secret: sessionSecret });
         await main({
             fetch,
+            githubAppId,
+            githubAppPrivateKey,
             githubClientId,
             githubClientSecret,
-            githubToken,
             jobRunner: this.jobRunner,
             req,
             resp,
@@ -91,9 +93,10 @@ export class MainTest {
         setSession(expectedResp, {}, { secret: sessionSecret });
         await main({
             fetch,
+            githubAppId,
+            githubAppPrivateKey,
             githubClientId,
             githubClientSecret,
-            githubToken,
             jobRunner: this.jobRunner,
             req,
             resp,
@@ -124,9 +127,10 @@ export class MainTest {
         const resp = new Response();
         await main({
             fetch,
+            githubAppId,
+            githubAppPrivateKey,
             githubClientId,
             githubClientSecret,
-            githubToken,
             jobRunner: this.jobRunner,
             req,
             resp,
@@ -154,9 +158,10 @@ export class MainTest {
         setSession(expectedResp, {}, { secret: sessionSecret });
         await main({
             fetch,
+            githubAppId,
+            githubAppPrivateKey,
             githubClientId,
             githubClientSecret,
-            githubToken,
             jobRunner: this.jobRunner,
             req,
             resp,

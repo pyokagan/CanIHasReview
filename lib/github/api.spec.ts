@@ -28,8 +28,8 @@ export class CreateApiTest {
 
     before(): void {
         this.ghApi = createApi({
+            authorization: `token ${CreateApiTest.token}`,
             fetch,
-            token: CreateApiTest.token,
             userAgent: CreateApiTest.userAgent,
         });
         this.baseNock = nock(baseUrl, {
