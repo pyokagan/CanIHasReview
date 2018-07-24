@@ -19,7 +19,7 @@ export interface JobRunnerOptions {
      * Maximum number of jobs that can be stored at any one time.
      * This includes both running and completed jobs.
      * When this limit is reached, and there is a new job request,
-     * {@link BackgroundRunner} will first try to prune completed jobs.
+     * The `JobRunner` will first try to prune completed jobs.
      * If no completed job can be pruned, the job request will be rejected.
      * Default: 50.
      */
@@ -49,10 +49,44 @@ interface RejectedJob {
     completionMs: number;
 }
 
+export interface JobRunner<T> {
+    /**
+     * Number of running and completed jobs stored.
+     */
+    readonly size: number;
+
+    /**
+     * Returns true if the maximum job storage limit has been hit and no completed job can be pruned.
+     */
+    readonly isFull: boolean;
+
+    /**
+     * Returns true if a job with `name` exists, false otherwise.
+     */
+    has(name: string): boolean;
+
+    /**
+     * Returns the status of a job with `name`, if it exists.
+     * Otherwise, returns undefined.
+     */
+    getStatus(name: string): JobStatus<T> | undefined;
+
+    /**
+     * Run a job.
+     * Returns its ID.
+     */
+    run(job: Job<T>): string;
+
+    /**
+     * Refuse any new jobs. Resolves when all jobs complete.
+     */
+    shutdown(): Promise<void>;
+}
+
 /**
- * Background job runner.
+ * `JobRunner` which holds job in memory.
  */
-export class JobRunner<T> {
+export class MemoryJobRunner<T> implements JobRunner<T> {
     readonly stream: NodeJS.WritableStream;
     readonly maxJobs: number;
     readonly maxAge: number;
@@ -71,31 +105,18 @@ export class JobRunner<T> {
         this.maxAge = options.maxAge || (10 * 60 * 1000);
     }
 
-    /**
-     * Number of running and completed jobs stored.
-     */
     get size(): number {
         return this.runningJobs.size + this.completedJobs.size;
     }
 
-    /**
-     * Returns true if the maximum job storage limit has been hit and no completed job can be pruned.
-     */
     get isFull(): boolean {
         return this.size >= this.maxJobs && !this.canPruneOne();
     }
 
-    /**
-     * Returns true if a job with `name` exists, false otherwise.
-     */
     has(name: string): boolean {
         return this.runningJobs.has(name) || this.completedJobs.has(name);
     }
 
-    /**
-     * Returns the status of a job with `name`, if it exists.
-     * Otherwise, returns undefined.
-     */
     getStatus(name: string): JobStatus<T> | undefined {
         if (this.runningJobs.has(name)) {
             return ['running', undefined];
@@ -113,9 +134,6 @@ export class JobRunner<T> {
         }
     }
 
-    /**
-     * Run a job.
-     */
     run(job: Job<T>): string {
         if (this.onFinish) {
             throw new Error('Shutting down, no new job will be accepted.');
@@ -162,9 +180,6 @@ export class JobRunner<T> {
         return name;
     }
 
-    /**
-     * Refuse any new jobs. Resolves when all jobs complete.
-     */
     shutdown(): Promise<void> {
         return new Promise<void>(resolve => {
             this.onFinish = resolve;

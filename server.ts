@@ -16,6 +16,7 @@ import {
 } from '@lib/http';
 import {
     JobRunner,
+    MemoryJobRunner,
 } from '@lib/job';
 import {
     resolveFsPath,
@@ -114,7 +115,7 @@ async function handleStatic(req: Request, resp: Response): Promise<void> {
 
 function main(): void {
     const config: Config = extractConfigFromEnv();
-    const jobRunner = new JobRunner<any>({
+    const jobRunner = new MemoryJobRunner<any>({
         stream: process.stderr,
     });
     const { fetch } = fetchPonyfill();

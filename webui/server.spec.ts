@@ -6,6 +6,7 @@ import {
 } from '@lib/http';
 import {
     JobRunner,
+    MemoryJobRunner,
 } from '@lib/job';
 import handleAuthRoutes from '@webui/auth/server';
 import handleError from '@webui/error/server';
@@ -37,7 +38,7 @@ export class MainTest {
     private jobRunner: JobRunner<{}>;
 
     before(): void {
-        this.jobRunner = new JobRunner<{}>();
+        this.jobRunner = new MemoryJobRunner<{}>();
     }
 
     @test
