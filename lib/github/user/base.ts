@@ -29,7 +29,6 @@ export interface MiniPublicUserInfo {
     id: number;
     avatar_url: string;
     type: UserType;
-    site_admin: boolean;
 }
 
 /**
@@ -45,8 +44,7 @@ export function isMiniPublicUserInfo(value: any): value is MiniPublicUserInfo {
         typeof obj.id === 'number' &&
         typeof obj.avatar_url === 'string' &&
         typeof obj.type === 'string' &&
-        UserType.indexOf(obj.type) >= 0 &&
-        typeof obj.site_admin === 'boolean';
+        UserType.indexOf(obj.type) >= 0;
 }
 
 /**
@@ -67,12 +65,6 @@ export interface PublicUserInfo extends MiniPublicUserInfo {
 
     hireable: boolean | null;
     bio: string | null;
-    public_repos: number;
-    public_gists: number;
-    followers: number;
-    following: number;
-    created_at: string;
-    updated_at: string;
 }
 
 /**
@@ -90,13 +82,7 @@ export function isPublicUserInfo(val: any): val is PublicUserInfo {
         (typeof obj.location === 'string' || obj.location === null) &&
         (typeof obj.email === 'string' || obj.email === null) &&
         (typeof obj.hireable === 'boolean' || obj.hireable === null) &&
-        (typeof obj.bio === 'string' || obj.bio === null) &&
-        typeof obj.public_repos === 'number' &&
-        typeof obj.public_gists === 'number' &&
-        typeof obj.followers === 'number' &&
-        typeof obj.following === 'number' &&
-        typeof obj.created_at === 'string' &&
-        typeof obj.updated_at === 'string';
+        (typeof obj.bio === 'string' || obj.bio === null);
 }
 
 /**

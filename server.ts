@@ -1,9 +1,20 @@
 import appConfig from '@config';
 import {
+    SystemClock,
+} from '@lib/clock';
+import {
     extractEnvVar,
 } from '@lib/env';
 import {
+    api3main as fakeGithubApiMain,
+    createGithubModel,
+} from '@lib/fake-github';
+import {
+    Fetch,
+} from '@lib/fetch';
+import {
     HttpStatus,
+    mockFetch,
     mount,
     Request,
     Response,
@@ -13,11 +24,13 @@ import {
 } from '@lib/http';
 import {
     JobRunner,
+    MemoryJobRunner,
 } from '@lib/job';
 import {
     resolveFsPath,
 } from '@lib/url-path';
 import * as WebUi from '@webui/server';
+import fetchPonyfill from 'fetch-ponyfill';
 import http from 'http';
 import createHttpError from 'http-errors';
 import path from 'path';
@@ -33,6 +46,7 @@ interface Config {
     githubClientId: string;
     githubClientSecret: string;
     githubToken: string;
+    mock: string;
 }
 
 /**
@@ -43,6 +57,7 @@ function extractConfigFromEnv(): Config {
         githubClientId: extractEnvVar('GITHUB_CLIENT_ID'),
         githubClientSecret: extractEnvVar('GITHUB_CLIENT_SECRET'),
         githubToken: extractEnvVar('GITHUB_TOKEN'),
+        mock: extractEnvVar('MOCK', ''),
         port: parseInt(extractEnvVar('PORT', '5000'), 10),
         proxy: !!extractEnvVar('PROXY', ''),
         secure: !!extractEnvVar('SECURE', ''),
@@ -50,11 +65,25 @@ function extractConfigFromEnv(): Config {
     };
 }
 
+type RequestMainOptions = {
+    req: Request;
+    resp: Response;
+    jobRunner: JobRunner<any>;
+    secure: boolean;
+    sessionSecret: string;
+    githubClientId: string;
+    githubClientSecret: string;
+    githubToken: string;
+    fetch: Fetch;
+};
+
 /**
  * Main request entry point.
  */
-async function main(req: Request, resp: Response, config: Config, jobRunner: JobRunner<any>): Promise<void> {
-    if (config.secure && req.protocol !== 'https') {
+async function requestMain(options: RequestMainOptions): Promise<void> {
+    const {req, resp} = options;
+
+    if (options.secure && req.protocol !== 'https') {
         throw createHttpError(HttpStatus.NOT_IMPLEMENTED,
                 'This website must be accessed over https', {
                     expose: true,
@@ -68,13 +97,16 @@ async function main(req: Request, resp: Response, config: Config, jobRunner: Job
         return;
     }
 
-    await WebUi.main(req, resp, {
-        githubClientId: config.githubClientId,
-        githubClientSecret: config.githubClientSecret,
-        githubToken: config.githubToken,
-        jobRunner,
-        secure: config.secure,
-        sessionSecret: config.sessionSecret,
+    await WebUi.main({
+        fetch: options.fetch,
+        githubClientId: options.githubClientId,
+        githubClientSecret: options.githubClientSecret,
+        githubToken: options.githubToken,
+        jobRunner: options.jobRunner,
+        req,
+        resp,
+        secure: options.secure,
+        sessionSecret: options.sessionSecret,
     });
 }
 
@@ -91,11 +123,49 @@ async function handleStatic(req: Request, resp: Response): Promise<void> {
     await setBodyFile(resp, staticFile);
 }
 
-const config: Config = extractConfigFromEnv();
-const jobRunner = new JobRunner<any>({
-    stream: process.stderr,
+async function main(): Promise<void> {
+    const config: Config = extractConfigFromEnv();
+    const jobRunner = new MemoryJobRunner<any>({
+        stream: process.stderr,
+    });
+    let fetch: Fetch = fetchPonyfill().fetch;
+    if (config.mock) {
+        const clock = new SystemClock();
+        const githubModel = await createGithubModel({
+            clock,
+            dir: config.mock,
+        });
+        const genAccessToken = () => 'testusertoken';
+        fetch = mockFetch((req, resp) => {
+            return fakeGithubApiMain({
+                genAccessToken,
+                model: githubModel,
+                req,
+                resp,
+            });
+        });
+    }
+
+    const serverCallback = wrapServerCallback((req, resp) => {
+        return requestMain({
+            fetch,
+            githubClientId: config.githubClientId,
+            githubClientSecret: config.githubClientSecret,
+            githubToken: config.githubToken,
+            jobRunner,
+            req,
+            resp,
+            secure: config.secure,
+            sessionSecret: config.sessionSecret,
+        });
+    }, {
+        proxy: config.proxy,
+    });
+    const server = http.createServer(serverCallback);
+    server.listen(config.port, 'localhost');
+}
+
+main().catch(e => {
+    console.error(e.stack || e);
+    process.exit(1);
 });
-const server = http.createServer(wrapServerCallback((req, resp) => main(req, resp, config, jobRunner), {
-    proxy: config.proxy,
-}));
-server.listen(config.port, 'localhost');

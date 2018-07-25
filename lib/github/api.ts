@@ -2,9 +2,7 @@ import {
     adaptFetchBaseRequestInit,
     adaptFetchBaseUrl,
     Fetch,
-} from './fetch';
-
-export { Fetch } from './fetch';
+} from '@lib/fetch';
 
 /**
  * Base GitHub API endpoint.

@@ -3,6 +3,9 @@
  * HTML user interface.
  */
 import {
+    Fetch,
+} from '@lib/fetch';
+import {
     HttpStatus,
     Request,
     Response,
@@ -33,6 +36,9 @@ import {
 } from './session';
 
 type Options = {
+    fetch: Fetch;
+    req: Request;
+    resp: Response;
     sessionSecret: string;
     secure?: boolean;
     githubClientId: string;
@@ -44,7 +50,8 @@ type Options = {
 /**
  * WebUI main entry point.
  */
-export async function main(req: Request, resp: Response, options: Options): Promise<void> {
+export async function main(options: Options): Promise<void> {
+    const { req, resp, fetch } = options;
     setHeader(resp, 'Cache-Control', 'no-cache, no-store, must-revalidate');
 
     const session: Session = getSession(req, {
@@ -52,7 +59,7 @@ export async function main(req: Request, resp: Response, options: Options): Prom
     }) || {};
     req.console.log(`Session data: ${JSON.stringify(session, null, 2)}`);
 
-    const auth = await makeAuthContext(session);
+    const auth = await makeAuthContext(session, fetch);
 
     try {
         let handled = true;
@@ -65,6 +72,7 @@ export async function main(req: Request, resp: Response, options: Options): Prom
             });
         } else if (authRoutes.some(route => route.testPath(req.pathname))) {
             await handleAuthRoutes({
+                fetch,
                 githubClientId: options.githubClientId,
                 githubClientSecret: options.githubClientSecret,
                 req,
@@ -81,6 +89,7 @@ export async function main(req: Request, resp: Response, options: Options): Prom
         } else if (pullRoute.testPath(req.pathname)) {
             await handlePull({
                 auth,
+                fetch,
                 githubToken: options.githubToken,
                 jobRunner: options.jobRunner,
                 req,

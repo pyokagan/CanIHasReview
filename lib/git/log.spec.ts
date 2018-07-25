@@ -1,3 +1,6 @@
+import {
+    StaticClock,
+} from '@lib/clock';
 import assert from 'assert';
 import {
     suite,
@@ -16,10 +19,14 @@ import {
  */
 @suite('lib/git#log()')
 export class LogTests {
+    private clock: StaticClock;
     private repo: TmpGitRepo;
 
     async before(): Promise<void> {
-        this.repo = await makeTmpGitRepo();
+        this.clock = new StaticClock(1112911993);
+        this.repo = await makeTmpGitRepo({
+            clock: this.clock,
+        });
         await this.repo.writeFile('file', 'a');
         await this.repo.checkCall('git', ['add', 'file']);
         await this.repo.checkCall('git', ['commit', '-m', 'initial commit']);
@@ -31,13 +38,13 @@ export class LogTests {
 
     @test
     async 'parses commit without parents'(): Promise<void> {
-        const actual = await log(this.repo.shell);
+        const actual = await log(this.repo);
         const expected = [{
-            author: 'A U Thor <author@example.com> 1112911993 -0700',
-            committer: 'C O Mitter <committer@example.com> 1112911993 -0700',
+            author: 'A U Thor <author@example.com> 1112911993 +0000',
+            committer: 'C O Mitter <committer@example.com> 1112911993 +0000',
             message: 'initial commit',
             parents: [],
-            sha: '018a7f0ea5029f9a7cfc6cb5515bb82c3b3246dd',
+            sha: 'fbcb4d0c8d1bf82d51a95a794b89917e8e8e8b7c',
             tree: '8b308149c6ad3f16c60b2f9f884c54c31b74f7ac',
         }];
         assert.deepStrictEqual(actual, expected);
@@ -46,22 +53,22 @@ export class LogTests {
     @test
     async 'parses commit with one parent'(): Promise<void> {
         await this.repo.writeFile('file', 'b');
-        this.repo.tick();
+        this.clock.advance(60);
         await this.repo.checkCall('git', ['commit', '-a', '-m', 'commit 2\n\nmessage']);
-        const actual = await log(this.repo.shell);
+        const actual = await log(this.repo);
         const expected = [{
-            author: 'A U Thor <author@example.com> 1112912053 -0700',
-            committer: 'C O Mitter <committer@example.com> 1112912053 -0700',
+            author: 'A U Thor <author@example.com> 1112912053 +0000',
+            committer: 'C O Mitter <committer@example.com> 1112912053 +0000',
             message: 'commit 2\n\nmessage',
-            parents: ['018a7f0ea5029f9a7cfc6cb5515bb82c3b3246dd'],
-            sha: '5f77c4709dfd96b2075dceacb4fb50366a941bad',
+            parents: ['fbcb4d0c8d1bf82d51a95a794b89917e8e8e8b7c'],
+            sha: 'b634b0cbb523f9cd78849d80e91fdc9b340dc9b5',
             tree: 'b5e2c9f31c009877e81f6481322c1f4387b3a834',
         }, {
-            author: 'A U Thor <author@example.com> 1112911993 -0700',
-            committer: 'C O Mitter <committer@example.com> 1112911993 -0700',
+            author: 'A U Thor <author@example.com> 1112911993 +0000',
+            committer: 'C O Mitter <committer@example.com> 1112911993 +0000',
             message: 'initial commit',
             parents: [],
-            sha: '018a7f0ea5029f9a7cfc6cb5515bb82c3b3246dd',
+            sha: 'fbcb4d0c8d1bf82d51a95a794b89917e8e8e8b7c',
             tree: '8b308149c6ad3f16c60b2f9f884c54c31b74f7ac',
         }];
         assert.deepStrictEqual(actual, expected);
@@ -71,25 +78,25 @@ export class LogTests {
     async 'parses commit with two parents'(): Promise<void> {
         await this.repo.checkCall('git', ['checkout', '-b', 'side']);
         await this.repo.writeFile('file', 'side');
-        this.repo.tick();
+        this.clock.advance(60);
         await this.repo.checkCall('git', ['commit', '-a', '-m', 'side-commit']);
         await this.repo.checkCall('git', ['checkout', 'master']);
-        this.repo.tick();
+        this.clock.advance(60);
         await this.repo.checkCall('git', ['merge', '--no-ff', '--no-edit', 'side']);
-        const actual = await log(this.repo.shell, ['HEAD^..HEAD']);
+        const actual = await log(this.repo, ['HEAD^..HEAD']);
         const expected = [{
-            author: 'A U Thor <author@example.com> 1112912113 -0700',
-            committer: 'C O Mitter <committer@example.com> 1112912113 -0700',
+            author: 'A U Thor <author@example.com> 1112912113 +0000',
+            committer: 'C O Mitter <committer@example.com> 1112912113 +0000',
             message: 'Merge branch \'side\'',
-            parents: ['018a7f0ea5029f9a7cfc6cb5515bb82c3b3246dd', 'ad0ad359a13058cd8bb8b37085431377bf8936ac'],
-            sha: 'f9f0e735987d8d67f0beb1c9a373887a5c07b985',
+            parents: ['fbcb4d0c8d1bf82d51a95a794b89917e8e8e8b7c', '77e65f8c72a7e2afaccada561d2c7a28181d3295'],
+            sha: '5938a6c156ab85d06e78925bceef5ebe9daa0765',
             tree: '0e2523f2c4b1d101163262b9bf82dcc8d34bb4c0',
         }, {
-            author: 'A U Thor <author@example.com> 1112912053 -0700',
-            committer: 'C O Mitter <committer@example.com> 1112912053 -0700',
+            author: 'A U Thor <author@example.com> 1112912053 +0000',
+            committer: 'C O Mitter <committer@example.com> 1112912053 +0000',
             message: 'side-commit',
-            parents: ['018a7f0ea5029f9a7cfc6cb5515bb82c3b3246dd'],
-            sha: 'ad0ad359a13058cd8bb8b37085431377bf8936ac',
+            parents: ['fbcb4d0c8d1bf82d51a95a794b89917e8e8e8b7c'],
+            sha: '77e65f8c72a7e2afaccada561d2c7a28181d3295',
             tree: '0e2523f2c4b1d101163262b9bf82dcc8d34bb4c0',
         }];
         assert.deepStrictEqual(actual, expected);

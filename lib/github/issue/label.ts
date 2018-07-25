@@ -24,8 +24,6 @@ import {
 export interface Label {
     id: number;
     name: string;
-    color: string;
-    default: boolean;
 }
 
 /**
@@ -38,9 +36,7 @@ export function isLabel(value: any): value is Label {
 
     const obj: Partial<Label> = value;
     return typeof obj.id === 'number' &&
-        typeof obj.name === 'string' &&
-        typeof obj.color === 'string' &&
-        typeof obj.default === 'boolean';
+        typeof obj.name === 'string';
 }
 
 /**

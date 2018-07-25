@@ -6,6 +6,7 @@ import {
 } from '@lib/http';
 import {
     JobRunner,
+    MemoryJobRunner,
 } from '@lib/job';
 import handleAuthRoutes from '@webui/auth/server';
 import handleError from '@webui/error/server';
@@ -15,6 +16,7 @@ import {
     setSession,
 } from '@webui/session';
 import assert from 'assert';
+import fetchPonyfill from 'fetch-ponyfill';
 import createHttpError from 'http-errors';
 import {
     suite,
@@ -23,6 +25,8 @@ import {
 import {
     main,
 } from './server';
+
+const { fetch } = fetchPonyfill();
 
 const sessionSecret = 'abc123';
 const githubClientId = 'dummyGithubClientId';
@@ -34,7 +38,7 @@ export class MainTest {
     private jobRunner: JobRunner<{}>;
 
     before(): void {
-        this.jobRunner = new JobRunner<{}>();
+        this.jobRunner = new MemoryJobRunner<{}>();
     }
 
     @test
@@ -53,11 +57,14 @@ export class MainTest {
         });
         setCacheHeader(expectedResp);
         setSession(expectedResp, {}, { secret: sessionSecret });
-        await main(req, resp, {
+        await main({
+            fetch,
             githubClientId,
             githubClientSecret,
             githubToken,
             jobRunner: this.jobRunner,
+            req,
+            resp,
             sessionSecret,
         });
         assertResp(resp, expectedResp);
@@ -73,6 +80,7 @@ export class MainTest {
         const resp = new Response();
         const expectedResp = new Response();
         await handleAuthRoutes({
+            fetch,
             githubClientId,
             githubClientSecret,
             req,
@@ -81,11 +89,14 @@ export class MainTest {
         });
         setCacheHeader(expectedResp);
         setSession(expectedResp, {}, { secret: sessionSecret });
-        await main(req, resp, {
+        await main({
+            fetch,
             githubClientId,
             githubClientSecret,
             githubToken,
             jobRunner: this.jobRunner,
+            req,
+            resp,
             sessionSecret,
         });
         assertResp(resp, expectedResp);
@@ -111,11 +122,14 @@ export class MainTest {
         setSession(expectedResp, {}, { secret: sessionSecret });
 
         const resp = new Response();
-        await main(req, resp, {
+        await main({
+            fetch,
             githubClientId,
             githubClientSecret,
             githubToken,
             jobRunner: this.jobRunner,
+            req,
+            resp,
             sessionSecret,
         });
         assertResp(resp, expectedResp);
@@ -138,11 +152,14 @@ export class MainTest {
         });
         setCacheHeader(expectedResp);
         setSession(expectedResp, {}, { secret: sessionSecret });
-        await main(req, resp, {
+        await main({
+            fetch,
             githubClientId,
             githubClientSecret,
             githubToken,
             jobRunner: this.jobRunner,
+            req,
+            resp,
             sessionSecret,
         });
         assertResp(resp, expectedResp);

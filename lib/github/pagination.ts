@@ -1,13 +1,15 @@
 import {
+    copyRequestInit,
+    mergeRequestInit,
+} from '@lib/fetch';
+import {
     baseUrl,
 } from './api';
 import {
     checkResponseOk,
 } from './check';
 import {
-    copyRequestInit,
     Fetch,
-    mergeRequestInit,
     RequestInit,
 } from './fetch';
 

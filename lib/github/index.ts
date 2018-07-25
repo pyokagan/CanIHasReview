@@ -1,8 +1,13 @@
 export {
-    Fetch,
     baseUrl,
     createApi,
 } from './api';
+export {
+    Fetch,
+    Headers,
+    RequestInit,
+    Response,
+} from './fetch';
 export {
     GithubError,
     JsonValidationError,
@@ -16,3 +21,18 @@ export * from './issue';
 export {
     adaptFetchCache,
 } from './fetch-cache';
+export {
+    exchangeToken,
+    getAuthorizationUrl,
+} from './oauth2';
+export {
+    Commit,
+    CommitIdent,
+    CommitParent,
+    CommitTree,
+    getCommit,
+    isCommit,
+    isCommitIdent,
+    isCommitParent,
+    isCommitTree,
+} from './git';

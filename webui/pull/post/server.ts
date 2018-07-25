@@ -30,6 +30,7 @@ import createHttpError from 'http-errors';
 import isEmpty from 'lodash/isEmpty';
 
 type Options = {
+    fetch: github.Fetch;
     req: Request;
     resp: Response;
     auth: AuthContext;
@@ -69,6 +70,7 @@ export async function handlePullPost(opts: Options): Promise<void> {
 
     // Create and run job
     const job = makeNewVersionJob({
+        fetch: opts.fetch,
         githubToken: opts.githubToken,
         prInfo,
         repoConfig,

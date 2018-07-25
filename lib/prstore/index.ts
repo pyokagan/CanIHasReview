@@ -28,6 +28,13 @@ export async function initWorkRepo(shell: Shell, originUrl: string): Promise<voi
 }
 
 /**
+ * Returns SHA of a branch from the `origin` remote.
+ */
+export async function getBranchSha(shell: Shell, branchName: string): Promise<string> {
+    return (await shell.checkOutput('git', ['rev-parse', `refs/remotes/origin/${branchName}`])).trim();
+}
+
+/**
  * Represents a PR version.
  */
 export interface Version {
@@ -181,6 +188,11 @@ export async function setVersionInterdiff(shell: Shell, prNumber: number,
 export async function fetchPr(workShell: Shell, prNumber: number): Promise<string> {
     await workShell.checkCall('git', ['fetch', '-q', 'origin', `pull/${prNumber}/head`]);
     return (await workShell.checkOutput('git', ['rev-parse', 'FETCH_HEAD']));
+}
+
+export async function fetchPr2(workShell: Shell, headUrl: string, ref: string): Promise<string> {
+    await workShell.checkCall('git', ['fetch', '-q', headUrl, ref]);
+    return (await workShell.checkOutput('git', ['rev-parse', 'FETCH_HEAD'])).trim();
 }
 
 /**

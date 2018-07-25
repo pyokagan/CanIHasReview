@@ -21,14 +21,10 @@ import {
     authLogoutRoute,
 } from '@webui/routes';
 import Session from '@webui/session';
-import fetchPonyfill from 'fetch-ponyfill';
 import createHttpError from 'http-errors';
-import simpleOauth2 from 'simple-oauth2';
 import handleLogin from './login/server';
 import handleLoginCallback from './loginCallback/server';
 import handleLogout from './logout/server';
-
-const { fetch } = fetchPonyfill();
 
 /**
  * User Agent to be reported to GitHub.
@@ -41,6 +37,7 @@ export interface AuthContext {
 }
 
 type Options = {
+    fetch: Fetch;
     req: Request;
     resp: Response;
     session: Session;
@@ -51,28 +48,17 @@ type Options = {
 export async function handleAuthRoutes(opts: Options): Promise<void> {
     const { req } = opts;
 
-    const oauth2 = simpleOauth2.create({
-        auth: {
-            authorizePath: '/login/oauth/authorize',
-            tokenHost: 'https://github.com',
-            tokenPath: '/login/oauth/access_token',
-        },
-        client: {
-            id: opts.githubClientId,
-            secret: opts.githubClientSecret,
-        },
-    });
-
     if (authLoginRoute.testPath(req.pathname)) {
         await handleLogin({
-            oauth2,
+            githubClientId: opts.githubClientId,
             req: opts.req,
             resp: opts.resp,
-            scope: '',
         });
     } else if (authLoginCallbackRoute.testPath(req.pathname)) {
         await handleLoginCallback({
-            oauth2,
+            fetch: opts.fetch,
+            githubClientId: opts.githubClientId,
+            githubClientSecret: opts.githubClientSecret,
             req: opts.req,
             resp: opts.resp,
             session: opts.session,
@@ -88,7 +74,7 @@ export async function handleAuthRoutes(opts: Options): Promise<void> {
     }
 }
 
-export async function makeAuthContext(session: Session): Promise<AuthContext | undefined> {
+export async function makeAuthContext(session: Session, fetch: Fetch): Promise<AuthContext | undefined> {
     const ghToken = session.ghToken;
     if (!ghToken) {
         return;

@@ -9,8 +9,10 @@ import {
     acceptHeader,
     baseUrl,
     createApi,
-    Fetch,
 } from './api';
+import {
+    Fetch,
+} from './fetch';
 
 const { fetch } = fetchPonyfill();
 

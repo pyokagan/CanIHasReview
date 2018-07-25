@@ -7,9 +7,9 @@ import childProcess from 'child_process';
 import stream from 'stream';
 
 export interface ShellOptions {
-    stdin?: 'ignore' | 'inherit' | stream.Readable;
-    stdout?: 'ignore' | 'inherit' | stream.Writable;
-    stderr?: 'ignore' | 'inherit' | stream.Writable;
+    stdin?: 'ignore' | 'inherit' | NodeJS.ReadableStream;
+    stdout?: 'ignore' | 'inherit' | NodeJS.WritableStream;
+    stderr?: 'ignore' | 'inherit' | NodeJS.WritableStream;
     cwd?: string;
     env?: { [key: string]: string };
     encoding?: string;
@@ -122,7 +122,13 @@ export function checkOutput(command: string, args: string[], options: ShellOptio
     });
 }
 
-export class Shell {
+export interface Shell {
+    call(command: string, args: string[], options?: ShellOptions): Promise<number>;
+    checkCall(command: string, args: string[], options?: ShellOptions): Promise<void>;
+    checkOutput(command: string, args: string[], options?: ShellOptions): Promise<string>;
+}
+
+export class SimpleShell {
     private options: ShellOptions;
 
     constructor(options?: ShellOptions) {
@@ -145,7 +151,7 @@ export class Shell {
     }
 }
 
-function toPipe(x?: string | stream.Stream): string | undefined {
+function toPipe(x?: string | NodeJS.ReadableStream | NodeJS.WritableStream): string | undefined {
     if (!x || typeof x === 'string') {
         return;
     } else {

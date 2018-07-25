@@ -83,6 +83,11 @@ export interface Request {
      * but to use one of the header helper functions instead.
      */
     headers: { [key: string]: string | string[] | undefined };
+
+    /**
+     * Request body.
+     */
+    body(limit?: number): Promise<Buffer>;
 }
 
 type RequestOptions = {
@@ -98,6 +103,16 @@ type RequestOptions = {
      * Console to use for logging.
      */
     console?: RequestConsole;
+
+    /**
+     * Additional headers.
+     */
+    headers?: { [key: string]: string };
+
+    /**
+     * Request body (if any).
+     */
+    body?: string | Buffer;
 };
 
 /**
@@ -115,9 +130,17 @@ export function createRequest(options: RequestOptions): Request {
         query.set(key, parsedQs[key]);
     }
 
+    const headers: { [key: string]: string } = {};
+    if (typeof options.headers === 'object') {
+        for (const key of Object.keys(options.headers)) {
+            headers[key.toLowerCase()] = options.headers[key];
+        }
+    }
+
     return {
+        body: handleBody(options.body),
         console,
-        headers: {},
+        headers,
         host: parsedUrl.host,
         id: options.id,
         method: options.method,
@@ -127,6 +150,21 @@ export function createRequest(options: RequestOptions): Request {
         query,
         search,
     };
+
+    function handleBody(body?: string | Buffer): (limit?: number) => Promise<Buffer> {
+        if (!body) {
+            const emptyBuffer = Buffer.alloc(0);
+            return () => Promise.resolve(emptyBuffer);
+        } else {
+            const buffer = typeof body === 'string' ? Buffer.from(body, 'utf8') : body;
+            return async (limit?: number): Promise<Buffer> => {
+                if (limit && buffer.byteLength > limit) {
+                    throw createHttpError(HttpStatus.PAYLOAD_TOO_LARGE, 'request entity too large');
+                }
+                return buffer;
+            };
+        }
+    }
 }
 
 function handleUrlParseProtocol(protocol: string): HttpProtocol {
@@ -183,7 +221,67 @@ export function nodeRequestToRequest(nodeReq: NodeRequest, options?: NodeRequest
         query.set(key, parsedQs[key]);
     }
 
+    const body = (limit?: number) => new Promise<Buffer>((resolve, reject) => {
+        let completed = false;
+        const chunks: Buffer[] = [];
+        let chunksTotalByteLength = 0;
+
+        nodeReq.on('aborted', onAborted);
+        nodeReq.on('close', onClose);
+        nodeReq.on('data', onData);
+        nodeReq.on('end', onEnd);
+        nodeReq.on('error', onError);
+
+        function onAborted(): void {
+            if (completed) {
+                return;
+            }
+            reject(createHttpError(HttpStatus.BAD_REQUEST, 'request aborted'));
+            completed = true;
+        }
+
+        function onData(chunk: Buffer): void {
+            if (completed) {
+                return;
+            }
+            chunks.push(chunk);
+            chunksTotalByteLength += chunk.byteLength;
+            if (limit && chunksTotalByteLength > limit) {
+                reject(createHttpError(HttpStatus.PAYLOAD_TOO_LARGE, 'request entity too large'));
+                completed = true;
+                return;
+            }
+        }
+
+        function onEnd(): void {
+            if (completed) {
+                return;
+            }
+            resolve(Buffer.concat(chunks));
+            chunks.length = 0;
+            completed = true;
+        }
+
+        function onError(e: any): void {
+            if (completed) {
+                return;
+            }
+            reject(e);
+            completed = true;
+        }
+
+        function onClose(): void {
+            chunks.length = 0;
+            nodeReq.removeListener('aborted', onAborted);
+            nodeReq.removeListener('data', onData);
+            nodeReq.removeListener('end', onEnd);
+            nodeReq.removeListener('error', onError);
+            nodeReq.removeListener('close', onClose);
+        }
+    });
+
     return {
+        body,
         console,
         headers: nodeReq.headers,
         host: nodeRequestToHost(nodeReq, proxy),

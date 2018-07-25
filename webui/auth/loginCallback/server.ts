@@ -3,6 +3,10 @@
  * (Node-only) Auth -- Login callback route handling
  */
 import {
+    exchangeToken,
+    Fetch,
+} from '@lib/github';
+import {
     HttpStatus,
     redirectSeeOther,
     Request,
@@ -19,21 +23,22 @@ import createHttpError from 'http-errors';
 import {
     posix as posixPath,
 } from 'path';
-import simpleOauth2 from 'simple-oauth2';
 import url from 'url';
 import {
     getLoginCallbackUrl,
 } from '../paths';
 
 type Options = {
+    fetch: Fetch;
     req: Request,
     resp: Response,
-    oauth2: simpleOauth2.OAuthClient;
     session: Session,
+    githubClientId: string,
+    githubClientSecret: string,
 };
 
 export async function handleLoginCallback(opts: Options): Promise<void> {
-    const { req, resp, oauth2, session } = opts;
+    const { req, resp, session } = opts;
 
     const routeParams = authLoginCallbackRoute.matchPath(req.pathname, req.search);
     if (!routeParams) {
@@ -49,19 +54,20 @@ export async function handleLoginCallback(opts: Options): Promise<void> {
         throw createHttpError(HttpStatus.BAD_REQUEST, 'code not provided');
     }
 
-    const token = await oauth2.authorizationCode.getToken({
+    const token = await exchangeToken({
+        clientId: opts.githubClientId,
+        clientSecret: opts.githubClientSecret,
         code,
-        redirect_uri: getLoginCallbackUrl({
+        fetch: opts.fetch,
+        redirectUri: getLoginCallbackUrl({
             host: req.host,
             mountPath: req.mountPath,
             protocol: req.protocol,
             redirect: routeParams.redirect,
         }),
     });
-    if (!token.access_token) {
-        throw createHttpError(HttpStatus.BAD_REQUEST, token.error_description || 'Unknown Error');
-    }
-    session.ghToken = token.access_token;
+
+    session.ghToken = token;
     redirectSeeOther(resp, getFinalRedirect(req.mountPath, routeParams.redirect));
 }
 

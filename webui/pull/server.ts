@@ -2,6 +2,9 @@
  * @module
  */
 import {
+    Fetch,
+} from '@lib/fetch';
+import {
     HttpStatus,
     Request,
     Response,
@@ -21,6 +24,7 @@ import * as Get from './get/server';
 import * as Post from './post/server';
 
 interface Options {
+    fetch: Fetch;
     req: Request;
     resp: Response;
     jobRunner: JobRunner<any>;
@@ -52,6 +56,7 @@ export async function handlePull(opts: Options): Promise<void> {
     case 'POST':
         await Post.handlePullPost({
             auth,
+            fetch: opts.fetch,
             githubToken: opts.githubToken,
             jobRunner: opts.jobRunner,
             req,

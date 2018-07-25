@@ -23,28 +23,10 @@ export interface RepoInfo {
     full_name: string;
     owner: MiniPublicUserInfo;
     private: boolean;
-    html_url: string;
     description: string | null;
     fork: boolean;
-    created_at: string;
-    updated_at: string;
-    git_url: string;
-    ssh_url: string;
     clone_url: string;
     homepage: string | null;
-    size: number;
-    stargazers_count: number;
-    watchers_count: number;
-    language: string | null;
-    has_issues: boolean;
-    has_projects: boolean;
-    has_downloads: boolean;
-    has_wiki: boolean;
-    has_pages: boolean;
-    forks_count: number;
-    mirror_url: string | null;
-    open_issues_count: number;
-    default_branch: string;
 }
 
 /**
@@ -61,28 +43,10 @@ export function isRepoInfo(value: any): value is RepoInfo {
         typeof obj.full_name === 'string' &&
         isMiniPublicUserInfo(obj.owner) &&
         typeof obj.private === 'boolean' &&
-        typeof obj.html_url === 'string' &&
         (typeof obj.description === 'string' || obj.description === null) &&
         typeof obj.fork === 'boolean' &&
-        typeof obj.created_at === 'string' &&
-        typeof obj.updated_at === 'string' &&
-        typeof obj.git_url === 'string' &&
-        typeof obj.ssh_url === 'string' &&
         typeof obj.clone_url === 'string' &&
-        (typeof obj.homepage === 'string' || obj.homepage === null) &&
-        typeof obj.size === 'number' &&
-        typeof obj.stargazers_count === 'number' &&
-        typeof obj.watchers_count === 'number' &&
-        (typeof obj.language === 'string' || obj.language === null) &&
-        typeof obj.has_issues === 'boolean' &&
-        typeof obj.has_projects === 'boolean' &&
-        typeof obj.has_downloads === 'boolean' &&
-        typeof obj.has_wiki === 'boolean' &&
-        typeof obj.has_pages === 'boolean' &&
-        typeof obj.forks_count === 'number' &&
-        (typeof obj.mirror_url === 'string' || obj.mirror_url === null) &&
-        typeof obj.open_issues_count === 'number' &&
-        typeof obj.default_branch === 'string';
+        (typeof obj.homepage === 'string' || obj.homepage === null);
 }
 
 export async function getRepoInfo(fetch: Fetch, owner: string, repo: string): Promise<RepoInfo> {
