@@ -84,7 +84,7 @@
         "file-loader": "^0.11.1",
         "glob": "^7.1.3",
         "istanbul-instrumenter-loader": "^3.0.1",
-        "mocha": "^3.3.0",
+        "mocha": "^5.2.0",
         "mocha-typescript": "^1.1.17",
         "mocha-webpack": "^1.1.0",
         "nodemon": "^1.18.10",
