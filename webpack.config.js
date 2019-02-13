@@ -5,7 +5,6 @@ const webpack = require('webpack');
 const webpackMerge = require('webpack-merge');
 const webpackNodeExternals = require('webpack-node-externals');
 const StatsWriterPlugin = require('webpack-stats-plugin').StatsWriterPlugin;
-const CompressionPlugin = require('compression-webpack-plugin');
 const baseConfig = require('./webpack.base.config');
 const appConfig = require('./config');
 
@@ -52,7 +51,6 @@ configs.push(webpackMerge(baseConfig, {
         new webpack.optimize.CommonsChunkPlugin({
             name: 'webui-common',
         }),
-        new CompressionPlugin(),
         new StatsWriterPlugin({
             filename: '../webui.json',
             fields: null,
