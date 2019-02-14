@@ -9,6 +9,7 @@ Object.entries(tsConfig.compilerOptions.paths)
     .forEach(pair => resolveAliases[pair[0]] = path.resolve(__dirname, pair[1][0]));
 
 module.exports = {
+    mode: 'none',
     output: {
         path: path.resolve(__dirname, 'dist', appConfig.publicOutputDir),
         filename: '[name].js',

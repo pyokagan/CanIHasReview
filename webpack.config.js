@@ -48,9 +48,6 @@ configs.push(webpackMerge(baseConfig, {
     },
     entry: webUiEntries,
     plugins: [
-        new webpack.optimize.CommonsChunkPlugin({
-            name: 'webui-common',
-        }),
         new StatsWriterPlugin({
             filename: '../webui.json',
             fields: null,
