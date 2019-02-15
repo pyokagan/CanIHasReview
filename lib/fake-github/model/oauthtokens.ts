@@ -1,17 +1,7 @@
-import fs from 'fs-extra';
-import path from 'path';
-import {
-    GithubModel,
-} from './ctx';
-import {
-    JsonValidationError,
-} from './errors';
-import {
-    hasOauthClient,
-} from './oauthclients';
-import {
-    hasUser,
-} from './user';
+import * as sqlite3 from '@lib/sqlite3-promise';
+import { GithubModel } from './ctx';
+import { JsonValidationError } from './errors';
+import { getUserId, getUserLogin } from './user';
 
 export interface OauthToken {
     clientId: string;
@@ -19,8 +9,9 @@ export interface OauthToken {
 }
 
 export interface DiskOauthToken {
-    clientId: string;
-    login: string;
+    id: string;
+    clientid: string;
+    userid: number;
 }
 
 export function isDiskOauthToken(val: any): val is DiskOauthToken {
@@ -29,69 +20,61 @@ export function isDiskOauthToken(val: any): val is DiskOauthToken {
     }
 
     const obj: Partial<DiskOauthToken> = val;
-    return typeof obj.clientId === 'string' &&
-        typeof obj.login === 'string';
+    return typeof obj.id === 'string' &&
+        typeof obj.clientid === 'string' &&
+        typeof obj.userid === 'number';
 }
 
-export function getOauthTokensDir(dir: string): string {
-    return path.join(dir, '.oauthtokens');
+export async function hasOauthToken(ctx: GithubModel, token: string): Promise<boolean> {
+    const obj = await sqlite3.get(ctx.db, `select id from oauthtokens where id = ?`, [token]);
+    return !!obj;
 }
 
-export function getOauthTokenPath(dir: string, token: string): string {
-    return path.join(getOauthTokensDir(dir), `${token}.json`);
-}
-
-export function hasOauthToken(ctx: GithubModel, token: string): Promise<boolean> {
-    return fs.pathExists(getOauthTokenPath(ctx.dir, token));
-}
-
-export async function readOauthToken(dir: string, token: string): Promise<DiskOauthToken> {
-    const data = await fs.readJson(getOauthTokenPath(dir, token));
-    if (!isDiskOauthToken(data)) {
-        throw new JsonValidationError(data);
+export async function readOauthToken(ctx: GithubModel, token: string): Promise<DiskOauthToken> {
+    const obj = await sqlite3.get(ctx.db, `select * from oauthtokens where id = ?`, [token]);
+    if (!obj) {
+        throw new Error(`no such oauth token: ${token}`);
     }
-    return data;
-}
-
-export async function writeOauthToken(dir: string, token: string, data: DiskOauthToken): Promise<void> {
-    await fs.mkdirs(getOauthTokensDir(dir));
-    await fs.writeJson(getOauthTokenPath(dir, token), data, { spaces: 2 });
-}
-
-export async function listOauthTokens(dir: string): Promise<string[]> {
-    const oauthTokensDir = getOauthTokensDir(dir);
-    if (!(await fs.pathExists(oauthTokensDir))) {
-        return [];
+    if (!isDiskOauthToken(obj)) {
+        throw new JsonValidationError(obj);
     }
-    return (await fs.readdir(oauthTokensDir))
-        .filter(filename => filename.endsWith('.json'))
-        .map(filename => filename.substring(0, filename.length - '.json'.length));
+    return obj;
+}
+
+export async function writeOauthToken(ctx: GithubModel, data: DiskOauthToken): Promise<void> {
+    await sqlite3.run(ctx.db, `update oauthtokens set clientid = ?, userid = ? where id = ?`, [
+        data.clientid,
+        data.userid,
+        data.id,
+    ]);
+}
+
+export async function listOauthTokens(ctx: GithubModel): Promise<string[]> {
+    const objs = await sqlite3.all(ctx.db, `select id from oauthtokens`, []);
+    const out: string[] = [];
+    for (const obj of objs) {
+        if (typeof obj.id !== 'string') {
+            throw new JsonValidationError(obj);
+        }
+        out.push(obj.id);
+    }
+    return out;
 }
 
 export async function createOauthToken(ctx: GithubModel, token: string,
         clientId: string, login: string): Promise<void> {
-    if (!(await hasOauthClient(ctx, clientId))) {
-        throw new Error(`no such oauth client: ${clientId}`);
-    }
-
-    if (!(await hasUser(ctx, login))) {
+    const userId = await getUserId(ctx, login);
+    if (!userId) {
         throw new Error(`no such user: ${login}`);
     }
-
-    if (await hasOauthToken(ctx, token)) {
-        throw new Error(`oauth token already exists: ${token}`);
-    }
-
-    await writeOauthToken(ctx.dir, token, {
-        clientId,
-        login,
-    });
+    await sqlite3.run(ctx.db, `insert into oauthtokens(id, clientid, userid) values(?, ?, ?)`,
+        [token, clientId, userId]);
 }
 
 export async function getOauthToken(ctx: GithubModel, token: string): Promise<OauthToken> {
-    const data = await readOauthToken(ctx.dir, token);
+    const data = await readOauthToken(ctx, token);
     return {
-        clientId: data.clientId,
-        login: data.login,
+        clientId: data.clientid,
+        login: await getUserLogin(ctx, data.userid),
     };
 }

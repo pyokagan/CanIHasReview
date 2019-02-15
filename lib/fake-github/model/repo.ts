@@ -1,38 +1,21 @@
 import * as git from '@lib/git';
-import {
-    cloneRepo as gitCloneRepo,
-    GitShell,
-    TmpGitRepo,
-} from '@lib/git/testutil';
-import {
-    Commit,
-    GithubBranch,
-    RepoInfo,
-} from '@lib/github';
-import {
-    checkCall,
-} from '@lib/shell';
-import fs from 'fs-extra';
+import { cloneRepo as gitCloneRepo, GitShell, TmpGitRepo } from '@lib/git/testutil';
+import { Commit, GithubBranch, RepoInfo } from '@lib/github';
+import { checkCall } from '@lib/shell';
+import * as sqlite3 from '@lib/sqlite3-promise';
 import path from 'path';
-import {
-    GithubModel,
-} from './ctx';
-import {
-    JsonValidationError,
-} from './errors';
-import {
-    getPublicUserInfo,
-    getUserDir,
-} from './user';
-import {
-    gitCommitToGithubCommit,
-} from './util';
+import { GithubModel } from './ctx';
+import { JsonValidationError } from './errors';
+import { getPublicUserInfo, getUserId } from './user';
+import { gitCommitToGithubCommit } from './util';
 
 export interface DiskRepoInfo {
     id: number;
-    private: boolean;
+    userid: number;
+    name: string;
+    private: number;
     description: string | null;
-    fork: boolean;
+    fork: number;
     homepage: string | null;
 }
 
@@ -43,80 +26,107 @@ export function isDiskRepoInfo(val: any): val is DiskRepoInfo {
 
     const obj: Partial<DiskRepoInfo> = val;
     return typeof obj.id === 'number' &&
-        typeof obj.private === 'boolean' &&
+        typeof obj.userid === 'number' &&
+        typeof obj.name === 'string' &&
+        typeof obj.private === 'number' &&
         (typeof obj.description === 'string' || obj.description === null) &&
-        typeof obj.fork === 'boolean' &&
+        typeof obj.fork === 'number' &&
         (typeof obj.homepage === 'string' || obj.homepage === null);
 }
 
-export function getRepoDir(dir: string, owner: string, name: string): string {
-    return path.join(getUserDir(dir, owner), name);
-}
-
-export function getRepoInfoPath(dir: string, owner: string, name: string): string {
-    return path.join(getRepoDir(dir, owner, name), 'info.json');
-}
-
-export function hasRepo(ctx: GithubModel, owner: string, name: string): Promise<boolean> {
-    return fs.pathExists(getRepoDir(ctx.dir, owner, name));
-}
-
-export async function readRepoInfo(dir: string, owner: string, name: string): Promise<DiskRepoInfo> {
-    const data = await fs.readJson(getRepoInfoPath(dir, owner, name));
-    if (!isDiskRepoInfo(data)) {
-        throw new JsonValidationError(data);
+export async function getRepoId(ctx: GithubModel, owner: string, name: string): Promise<number | undefined> {
+    const obj = await sqlite3.get(ctx.db,
+        `select id from repos where name = ? and userid = (select id from users where login = ?)`,
+        [name, owner]);
+    if (!obj) {
+        return obj;
     }
-    return data;
+    if (typeof obj !== 'object' || typeof obj.id !== 'number') {
+        throw new JsonValidationError(obj);
+    }
+    return obj.id;
 }
 
-export async function writeRepoInfo(dir: string, owner: string, name: string, data: DiskRepoInfo): Promise<void> {
-    await fs.mkdirs(getRepoDir(dir, owner, name));
-    await fs.writeJson(getRepoInfoPath(dir, owner, name), data, { spaces: 2 });
+export async function getRepoDir(ctx: GithubModel, owner: string, name: string): Promise<string> {
+    const id = await getRepoId(ctx, owner, name);
+    if (typeof id === 'undefined') {
+        throw new Error(`no such repo: ${owner}/${name}`);
+    }
+    return path.join(ctx.dir, 'repos', `${id}`);
+}
+
+export async function hasRepo(ctx: GithubModel, owner: string, name: string): Promise<boolean> {
+    return typeof (await getRepoId(ctx, owner, name)) === 'number';
+}
+
+export async function readRepoInfo(db: sqlite3.Database, owner: string, name: string): Promise<DiskRepoInfo> {
+    const obj = await sqlite3.get(db,
+        `select * from repos where name = ? and userid = (select id from users where login = ?)`,
+        [name, owner]);
+    if (!obj) {
+        throw new Error(`no such repo: ${owner}/${name}`);
+    }
+    if (!isDiskRepoInfo(obj)) {
+        throw new JsonValidationError(obj);
+    }
+    return obj;
+}
+
+export async function writeRepoInfo(db: sqlite3.Database, data: DiskRepoInfo): Promise<void> {
+    await sqlite3.run(db,
+        `update repos set userid=?, name=?, description=?, private=?, fork=?, homepage=? where id=?`, [
+        data.userid,
+        data.name,
+        data.description,
+        data.private,
+        data.fork,
+        data.homepage,
+        data.id,
+    ]);
 }
 
 export async function listRepos(ctx: GithubModel, owner: string): Promise<string[]> {
-    return (await fs.readdir(getUserDir(ctx.dir, owner)))
-        .filter(filename => !filename.startsWith('.'));
-}
-
-async function getMaxRepoId(ctx: GithubModel, owner: string, initial: number): Promise<number> {
-    let largestId = initial;
-    for (const otherRepo of (await listRepos(ctx, owner))) {
-        const data = await readRepoInfo(ctx.dir, owner, otherRepo);
-        largestId = Math.max(data.id, largestId);
+    const objs = await sqlite3.all(ctx.db,
+        `select name from repos where userid = (select id from users where login = ?)`,
+        [owner]);
+    const out: string[] = [];
+    for (const obj of objs) {
+        if (typeof obj !== 'object' || obj.name !== 'string') {
+            throw new JsonValidationError(obj);
+        }
+        out.push(obj.name);
     }
-    return largestId;
+    return out;
 }
 
 export async function createRepo(ctx: GithubModel, owner: string, name: string): Promise<void> {
     if (await hasRepo(ctx, owner, name)) {
         throw new Error(`repo already exists: ${owner}/${name}`);
     }
-    const largestId = await getMaxRepoId(ctx, owner, -1);
-    const repoDir = getRepoDir(ctx.dir, owner, name);
+    const ownerId = await getUserId(ctx, owner);
+    if (!ownerId) {
+        throw new Error(`no such user: ${owner}`);
+    }
+    await sqlite3.run(ctx.db,
+        `insert into repos(userid, name) values(?, ?)`,
+        [ownerId, name]);
+    const repoDir = await getRepoDir(ctx, owner, name);
     await checkCall('git', ['init', '--bare', repoDir]);
-    await writeRepoInfo(ctx.dir, owner, name, {
-        description: null,
-        fork: false,
-        homepage: null,
-        id: largestId + 1,
-        private: false,
-    });
 }
 
 export async function getRepoInfo(ctx: GithubModel, owner: string, name: string): Promise<RepoInfo> {
-    const repoDir = path.resolve(getRepoDir(ctx.dir, owner, name));
-    const info = await readRepoInfo(ctx.dir, owner, name);
+    const repoDir = path.resolve(await getRepoDir(ctx, owner, name));
+    const info = await readRepoInfo(ctx.db, owner, name);
     return {
         clone_url: repoDir,
         description: info.description,
-        fork: info.fork,
+        fork: !!info.fork,
         full_name: `${owner}/${name}`,
         homepage: info.homepage,
         id: info.id,
         name,
         owner: await getPublicUserInfo(ctx, owner),
-        private: info.private,
+        private: !!info.private,
     };
 }
 
@@ -136,7 +146,7 @@ export async function getGitShell(ctx: GithubModel, owner: string,
         clock: ctx.clock,
         committerEmail: opts.committerEmail || 'committer@example.com',
         committerName: opts.committerName || 'C O Mitter',
-        dir: getRepoDir(ctx.dir, owner, repo),
+        dir: await getRepoDir(ctx, owner, repo),
     });
 }
 
@@ -199,7 +209,7 @@ export async function getCommit(ctx: GithubModel, owner: string, repo: string, s
 }
 
 export async function cloneRepo(ctx: GithubModel, owner: string, repo: string): Promise<TmpGitRepo> {
-    const repoDir = path.resolve(getRepoDir(ctx.dir, owner, repo));
+    const repoDir = path.resolve(await getRepoDir(ctx, owner, repo));
     return await gitCloneRepo({
         clock: ctx.clock,
         url: repoDir,
@@ -212,15 +222,14 @@ export async function forkRepo(ctx: GithubModel, srcOwner: string, srcRepo: stri
     if (await hasRepo(ctx, dstOwner, dstRepo)) {
         throw new Error(`repo already exists: ${dstOwner}/${dstRepo}`);
     }
-    const largestId = await getMaxRepoId(ctx, dstOwner, -1);
-    const srcRepoDir = getRepoDir(ctx.dir, srcOwner, srcRepo);
-    const dstRepoDir = getRepoDir(ctx.dir, dstOwner, dstRepo);
+    const dstOwnerId = await getUserId(ctx, dstOwner);
+    if (!dstOwnerId) {
+        throw new Error(`no such user: ${dstOwner}`);
+    }
+    await sqlite3.run(ctx.db,
+        `insert into repos(userid, name) values(?, ?)`,
+        [dstOwnerId, dstRepo]);
+    const srcRepoDir = await getRepoDir(ctx, srcOwner, srcRepo);
+    const dstRepoDir = await getRepoDir(ctx, dstOwner, dstRepo);
     await checkCall('git', ['clone', '--bare', srcRepoDir, dstRepoDir]);
-    await writeRepoInfo(ctx.dir, dstOwner, dstRepo, {
-        description: null,
-        fork: false,
-        homepage: null,
-        id: largestId + 1,
-        private: false,
-    });
 }

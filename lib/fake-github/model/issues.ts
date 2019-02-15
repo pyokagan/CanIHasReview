@@ -1,32 +1,18 @@
 import * as git from '@lib/git';
-import {
-    GithubCommit,
-    IssueComment,
-    PrInfo,
-} from '@lib/github';
-import {
-    SimpleShell,
-} from '@lib/shell';
-import fs from 'fs-extra';
+import { GithubCommit, IssueComment, PrInfo } from '@lib/github';
+import { SimpleShell } from '@lib/shell';
+import * as sqlite3 from '@lib/sqlite3-promise';
 import path from 'path';
-import {
-    GithubModel,
-} from './ctx';
-import {
-    JsonValidationError,
-} from './errors';
-import {
-    getRepoDir,
-    getRepoInfo,
-} from './repo';
-import {
-    getMiniPublicUserInfo,
-} from './user';
-import {
-    gitCommitToGithubCommit,
-} from './util';
+import { GithubModel } from './ctx';
+import { JsonValidationError } from './errors';
+import { getRepoDir, getRepoId, getRepoInfo } from './repo';
+import { getMiniPublicUserInfo, getUserId, getUserLogin } from './user';
+import { gitCommitToGithubCommit } from './util';
 
 interface DiskIssueComment {
+    id: number;
+    issueid: number;
+    userid: number;
     body: string;
     user: string;
 }
@@ -37,20 +23,21 @@ function isDiskIssueComment(val: any): val is DiskIssueComment {
     }
 
     const obj: Partial<DiskIssueComment> = val;
-    return typeof obj.body === 'string' &&
+    return typeof obj.id === 'number' &&
+        typeof obj.issueid === 'number' &&
+        typeof obj.userid === 'number' &&
+        typeof obj.body === 'string' &&
         typeof obj.user === 'string';
 }
 
-function isDiskIssueCommentArray(val: any): val is DiskIssueComment[] {
-    return Array.isArray(val) &&
-        val.every(x => isDiskIssueComment(x));
-}
-
 interface DiskIssuePr {
-    state: 'closed' | 'open';
+    id: number;
+    repoid: number;
+    nr: number;
+    userid: number;
     title: string;
     body: string;
-    comments: DiskIssueComment[];
+    state: 'closed' | 'open';
 }
 
 function isDiskIssuePr(val: any): val is DiskIssuePr {
@@ -59,10 +46,13 @@ function isDiskIssuePr(val: any): val is DiskIssuePr {
     }
 
     const obj: Partial<DiskIssuePr> = val;
-    return (obj.state === 'closed' || obj.state === 'open') &&
+    return typeof obj.id === 'number' &&
+        typeof obj.repoid === 'number' &&
+        typeof obj.nr === 'number' &&
+        typeof obj.userid === 'number' &&
         typeof obj.title === 'string' &&
         typeof obj.body === 'string' &&
-        isDiskIssueCommentArray(obj.comments);
+        (obj.state === 'closed' || obj.state === 'open');
 }
 
 interface DiskIssue extends DiskIssuePr {
@@ -82,8 +72,7 @@ interface DiskPr extends DiskIssuePr {
     type: 'pr';
     head: string;
     base: string;
-    user: string;
-    merged: boolean;
+    merged: number;
 }
 
 function isDiskPr(val: any): val is DiskPr {
@@ -95,91 +84,125 @@ function isDiskPr(val: any): val is DiskPr {
     return obj.type === 'pr' &&
         typeof obj.head === 'string' &&
         typeof obj.base === 'string' &&
-        typeof obj.user === 'string' &&
-        typeof obj.merged === 'boolean';
+        typeof obj.merged === 'number';
 }
 
-export function getIssuesDir(dir: string, owner: string, repo: string): string {
-    return path.join(getRepoDir(dir, owner, repo), 'issues');
-}
-
-export function getIssuePath(dir: string, owner: string, repo: string, nr: number | string): string {
-    return path.join(getIssuesDir(dir, owner, repo), `${nr}.json`);
-}
-
-export function hasIssue(ctx: GithubModel, owner: string, repo: string, nr: number): Promise<boolean> {
-    return fs.pathExists(getIssuePath(ctx.dir, owner, repo, nr));
-}
-
-async function readIssue(dir: string, owner: string, repo: string, nr: number | string): Promise<DiskIssue | DiskPr> {
-    const data = await fs.readJson(getIssuePath(dir, owner, repo, nr));
-    if (isDiskIssue(data)) {
-        return data;
-    } else if (isDiskPr(data)) {
-        return data;
-    } else {
-        throw new JsonValidationError(data);
+async function getIssueId(ctx: GithubModel, owner: string, repo: string, nr: number): Promise<number | undefined> {
+    const obj = await sqlite3.get(ctx.db, `select id from issues
+        where nr = ?
+        and repoid = (select id from repos where name = ? and userid = (select id from users where login = ?))`,
+        [nr, repo, owner]);
+    if (!obj) {
+        return obj;
     }
+    if (typeof obj.id !== 'number') {
+        throw new JsonValidationError(obj);
+    }
+    return obj.id;
 }
 
-async function writeIssue(dir: string, owner: string,
-        repo: string, nr: number | string, data: DiskIssue | DiskPr): Promise<void> {
-    await fs.mkdirs(getIssuesDir(dir, owner, repo));
-    await fs.writeJson(getIssuePath(dir, owner, repo, nr), data, { spaces: 2 });
+export async function hasIssue(ctx: GithubModel, owner: string, repo: string, nr: number): Promise<boolean> {
+    return typeof (await getIssueId(ctx, owner, repo, nr)) === 'number';
+}
+
+async function readIssue(ctx: GithubModel, owner: string,
+        repo: string, nr: number | string): Promise<DiskIssue | DiskPr> {
+    const obj = await sqlite3.get(ctx.db, `select * from issues
+        where nr = ?
+        and repoid = (select id from repos where name = ? and userid = (select id from users where login = ?))`,
+        [nr, repo, owner]);
+    if (!obj) {
+        throw new Error(`no such issues: ${owner}/${repo}/${nr}`);
+    }
+    if (isDiskIssue(obj)) {
+        return obj;
+    } else if (isDiskPr(obj)) {
+        return obj;
+    } else {
+        throw new JsonValidationError(obj);
+    }
 }
 
 export async function listIssues(ctx: GithubModel, owner: string, repo: string): Promise<number[]> {
-    const issuesDir = getIssuesDir(ctx.dir, owner, repo);
-    if (!(await fs.pathExists(issuesDir))) {
-        return [];
+    const objs = await sqlite3.all(ctx.db, `select nr from issues
+        where repoid = (select id from repos where name = ? and userid = (select id from users where login = ?))`,
+        [repo, owner]);
+    const out: number[] = [];
+    for (const obj of objs) {
+        if (typeof obj.nr !== 'number') {
+            throw new JsonValidationError(obj);
+        }
+        out.push(obj.nr);
     }
-    return (await fs.readdir(issuesDir))
-        .filter(filename => /^[0-9]+\.json$/.test(filename))
-        .map(filename => parseInt(filename.substring(0, filename.length - '.json'.length)));
+    return out;
 }
 
-export async function createIssue(ctx: GithubModel, owner: string, repo: string): Promise<number> {
-    const largestId = Math.max(0, ...(await listIssues(ctx, owner, repo)));
+async function getLargestIssueId(ctx: GithubModel, repoId: number): Promise<number> {
+    const obj = await sqlite3.get(ctx.db, `select max(issues.nr) as maxnr from issues
+        where issues.repoid = ?`,
+        [repoId]);
+    if (!obj || obj.maxnr === null) {
+        return 0;
+    }
+    if (typeof obj.maxnr !== 'number') {
+        throw new JsonValidationError(obj);
+    }
+    return obj.maxnr;
+}
+
+export async function createIssue(ctx: GithubModel, owner: string, repo: string, user?: string): Promise<number> {
+    const repoId = await getRepoId(ctx, owner, repo);
+    if (!repoId) {
+        throw new Error(`no such repo: ${owner}/${repo}`);
+    }
+    const largestId = await getLargestIssueId(ctx, repoId);
     const nr = largestId + 1;
-    await writeIssue(ctx.dir, owner, repo, nr, {
-        body: 'issue body',
-        comments: [],
-        state: 'open',
-        title: 'issue title',
-        type: 'issue',
-    });
+    const userId = await (async () => {
+        if (!user) {
+            return null;
+        }
+        const uid = await getUserId(ctx, user);
+        if (typeof uid === 'undefined') {
+            throw new Error(`no such user: ${user}`);
+        }
+        return uid;
+    })();
+    await sqlite3.run(ctx.db, `insert into issues(repoid, nr, type, userid) values(?, ?, ?, ?)`,
+        [repoId, nr, 'issue', userId]);
     return nr;
 }
 
 export async function createPr(ctx: GithubModel, owner: string,
         repo: string, base: string, head: string, user?: string): Promise<number> {
-    const largestId = Math.max(0, ...(await listIssues(ctx, owner, repo)));
+    const repoId = await getRepoId(ctx, owner, repo);
+    if (!repoId) {
+        throw new Error(`no such repo: ${owner}/${repo}`);
+    }
+    const largestId = await getLargestIssueId(ctx, repoId);
     const nr = largestId + 1;
     const [headOwner] = splitOwnerRepoBranch(head, owner, repo);
-    const myUser = user || headOwner;
-    await writeIssue(ctx.dir, owner, repo, nr, {
-        base,
-        body: 'PR body',
-        comments: [],
-        head,
-        merged: false,
-        state: 'open',
-        title: 'PR title',
-        type: 'pr',
-        user: myUser,
-    });
+    if (!user) {
+        user = headOwner;
+    }
+    const userId = await getUserId(ctx, user);
+    if (typeof userId === 'undefined') {
+        throw new Error(`no such user: ${user}`);
+    }
+    await sqlite3.run(ctx.db,
+        `insert into issues(repoid, nr, type, userid, head, base) values(?, ?, ?, ?, ?, ?)`,
+        [repoId, nr, 'pr', userId, head, base]);
     return nr;
 }
 
 export async function getPrInfo(ctx: GithubModel, owner: string, repo: string, nr: number): Promise<PrInfo> {
-    const data = await readIssue(ctx.dir, owner, repo, nr);
+    const data = await readIssue(ctx, owner, repo, nr);
     if (data.type !== 'pr') {
         throw new Error(`is an issue: ${nr}`);
     }
 
     const [baseOwner, baseRepo, baseBranch] = splitOwnerRepoBranch(data.base, owner, repo);
     const [headOwner, headRepo, headBranch] = splitOwnerRepoBranch(data.head, owner, repo);
-    const user = await getMiniPublicUserInfo(ctx, data.user);
+    const user = await getMiniPublicUserInfo(ctx, await getUserLogin(ctx, data.userid));
 
     return {
         base: {
@@ -197,7 +220,7 @@ export async function getPrInfo(ctx: GithubModel, owner: string, repo: string, n
         id: 0, // TODO: remove ID
         locked: false,
         maintainer_can_modify: true,
-        merged: data.merged,
+        merged: !!data.merged,
         merged_by: null,
         number: nr,
         state: data.state,
@@ -225,14 +248,14 @@ function splitOwnerRepoBranch(val: string, defaultOwner: string, defaultRepo: st
 }
 
 export async function getPrCommits(ctx: GithubModel, owner: string, repo: string, nr: number): Promise<GithubCommit[]> {
-    const info = await readIssue(ctx.dir, owner, repo, nr);
+    const info = await readIssue(ctx, owner, repo, nr);
     if (info.type !== 'pr') {
         throw new Error(`not a pr: ${nr}`);
     }
     const [baseOwner, baseRepo, baseBranch] = splitOwnerRepoBranch(info.base, owner, repo);
     const [headOwner, headRepo, headBranch] = splitOwnerRepoBranch(info.head, owner, repo);
-    const baseRepoDir = path.resolve(getRepoDir(ctx.dir, baseOwner, baseRepo));
-    const headRepoDir = path.resolve(getRepoDir(ctx.dir, headOwner, headRepo));
+    const baseRepoDir = path.resolve(await getRepoDir(ctx, baseOwner, baseRepo));
+    const headRepoDir = path.resolve(await getRepoDir(ctx, headOwner, headRepo));
     const shell = new SimpleShell({ cwd: ctx.workDir });
     await shell.checkCall('git', ['fetch', baseRepoDir, baseBranch]);
     await shell.checkCall('git', ['branch', 'base', 'FETCH_HEAD']);
@@ -245,32 +268,53 @@ export async function getPrCommits(ctx: GithubModel, owner: string, repo: string
     }
 }
 
+export async function readIssueComments(ctx: GithubModel, owner: string,
+        repo: string, nr: number): Promise<DiskIssueComment[]> {
+    const objs = await sqlite3.all(ctx.db, `select * from issue_comments
+    where issue_id = (select id from issues where nr = ?
+        and repoid = (select id from repos where name = ?
+            and userid = (select id from users where login = ?)))`,
+            [nr, repo, owner]);
+    const out: DiskIssueComment[] = [];
+    for (const obj of objs) {
+        if (!isDiskIssueComment(obj)) {
+            throw new JsonValidationError(obj);
+        }
+        out.push(obj);
+    }
+    return out;
+}
+
 export async function getIssueComments(ctx: GithubModel, owner: string,
         repo: string, nr: number): Promise<IssueComment[]> {
-    const info = await readIssue(ctx.dir, owner, repo, nr);
+    const objs = await readIssueComments(ctx, owner, repo, nr);
     const out: IssueComment[] = [];
-    for (const data of info.comments) {
+    for (const obj of objs) {
         out.push({
-            body: data.body,
-            id: 0,
-            user: await getMiniPublicUserInfo(ctx, data.user),
+            body: obj.body,
+            id: obj.id,
+            user: await getMiniPublicUserInfo(ctx, await getUserLogin(ctx, obj.userid)),
         });
     }
     return out;
 }
 
 export async function addIssueComment(ctx: GithubModel, owner: string,
-        repo: string, nr: number, body: string, user: string): Promise<IssueComment> {
-    const diskIssueComment: DiskIssueComment = {
-        body,
-        user,
-    };
-    const data = await readIssue(ctx.dir, owner, repo, nr);
-    data.comments.push(diskIssueComment);
-    await writeIssue(ctx.dir, owner, repo, nr, data);
+        repo: string, nr: number, body: string, author: string): Promise<IssueComment> {
+    const issueId = await getIssueId(ctx, owner, repo, nr);
+    if (!issueId) {
+        throw new Error(`no such issue: ${owner}/${repo}/${nr}`);
+    }
+    const authorId = await getUserId(ctx, author);
+    if (!authorId) {
+        throw new Error(`no such user: ${author}`);
+    }
+    const id = await sqlite3.runWithRowId(ctx.db,
+        `insert into issue_comments(issueid, userid, body) values(?, ?, ?)`,
+        [issueId, authorId, body]);
     return {
-        body: diskIssueComment.body,
-        id: 0,
-        user: await getMiniPublicUserInfo(ctx, diskIssueComment.user),
+        body,
+        id,
+        user: await getMiniPublicUserInfo(ctx, author),
     };
 }
