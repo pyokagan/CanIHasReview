@@ -47,6 +47,7 @@ interface Config {
     githubClientSecret: string;
     githubToken: string;
     mock: string;
+    mountPath: string;
 }
 
 /**
@@ -58,6 +59,7 @@ function extractConfigFromEnv(): Config {
         githubClientSecret: extractEnvVar('GITHUB_CLIENT_SECRET'),
         githubToken: extractEnvVar('GITHUB_TOKEN'),
         mock: extractEnvVar('MOCK', ''),
+        mountPath: extractEnvVar('MOUNTPATH', ''),
         port: parseInt(extractEnvVar('PORT', '5000'), 10),
         proxy: !!extractEnvVar('PROXY', ''),
         secure: !!extractEnvVar('SECURE', ''),
@@ -75,6 +77,7 @@ type RequestMainOptions = {
     githubClientSecret: string;
     githubToken: string;
     fetch: Fetch;
+    mountPath: string;
 };
 
 /**
@@ -92,12 +95,12 @@ async function requestMain(options: RequestMainOptions): Promise<void> {
 
     let handled = false;
 
-    handled = await mount(req, '/static', () => handleStatic(req, resp));
+    handled = await mount(req, options.mountPath + '/static', () => handleStatic(req, resp));
     if (handled) {
         return;
     }
 
-    await WebUi.main({
+    handled = await mount(req, options.mountPath, () => WebUi.main({
         fetch: options.fetch,
         githubClientId: options.githubClientId,
         githubClientSecret: options.githubClientSecret,
@@ -107,7 +110,12 @@ async function requestMain(options: RequestMainOptions): Promise<void> {
         resp,
         secure: options.secure,
         sessionSecret: options.sessionSecret,
-    });
+    }));
+    if (handled) {
+        return;
+    }
+
+    throw createHttpError(HttpStatus.NOT_FOUND);
 }
 
 /**
@@ -153,6 +161,7 @@ async function main(): Promise<void> {
             githubClientSecret: config.githubClientSecret,
             githubToken: config.githubToken,
             jobRunner,
+            mountPath: config.mountPath,
             req,
             resp,
             secure: config.secure,

@@ -29,7 +29,7 @@ export async function mount(req: Request, mountpath: string, fn: () => void | Pr
  * @returns The modified pathname, or an empty string if the pathname does not match.
  */
 function matchMountpath(mountpath: string, pathname: string): string {
-    if (!mountpath.startsWith('/')) {
+    if (mountpath && !mountpath.startsWith('/')) {
         throw new TypeError(`mountpath must start with /: ${mountpath}`);
     }
 
